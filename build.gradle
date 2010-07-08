@@ -7,7 +7,8 @@ import org.springframework.build.Version;
 // configuration for all projects including this one (the root project)
 // -----------------------------------------------------------------------------
 allprojects {
-    version = new Version('1.0.0.BUILD-SNAPSHOT')
+    group = 'org.springframework.amqp'
+    version = new Version('1.0.0.RELEASE')
 
     repositories {
         mavenRepo urls: "file://" + System.properties['user.home'] + "/.m2/repository"
@@ -33,12 +34,12 @@ subprojects { }
 javaprojects = subprojects.findAll { project -> project.name.startsWith('spring-') }
 
 configure(javaprojects) {
+    erlangLicense = false
     apply plugin: 'java'
     apply plugin: 'eclipse'
     apply from: "$rootDir/buildSrc/bundlor.gradle"
     apply from: "$rootDir/buildSrc/maven.gradle"
 
-    group = 'org.springframework.amqp'
     springVersion = '3.0.3.RELEASE'
 
     // dependencies that are common across all java projects
@@ -95,6 +96,7 @@ project('spring-rabbit') {
 }
 
 project('spring-rabbit-admin') {
+    erlangLicense = true
     dependencies {
         compile project(':spring-amqp-core')
         compile project(':spring-otp')
