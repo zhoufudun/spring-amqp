@@ -1,0 +1,73 @@
+
+import org.springframework.build.Version.ReleaseType;
+
+apply plugin: 'maven'
+
+task sourceJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.java
+}
+
+// upload stuff
+
+// check that upload-related properties are defined and fail early if not
+// these properties ('s3AccessKey', etc) should be defined in
+// 'gradle.properties' in the project root
+gradle.taskGraph.whenReady {graph ->
+    if (graph.hasTask(uploadArchives)) {
+        s3AccessKey
+        s3SecretAccessKey
+
+        if (version.releaseType == ReleaseType.RELEASE) {
+            mavenSyncRepoDir
+        }
+    }
+}
+
+configurations {
+    deployerJars
+}
+
+artifacts {
+    archives sourceJar
+}
+
+dependencies {
+    deployerJars "org.springframework.build.aws:org.springframework.build.aws.maven:3.0.0.RELEASE"
+}
+
+uploadArchives {
+    doFirst() {
+        repositories.mavenDeployer {
+            pom.project {
+                licenses {
+                    license {
+                        name 'The Apache Software License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        distribution 'repo'
+                    }
+                    license {
+                        name 'The Erlang Public License, Version 1.0'
+                        url 'http://www.eddieware.org/EPL'
+                        distribution 'repo'
+                    }
+                }
+            }
+
+            switch (version.releaseType) {
+                case ReleaseType.RELEASE:
+                    repository(url: 'file://' + mavenSyncRepoDir)
+                    break;
+                default: // SNAPSHOT or MILESTONE build
+                    s3credentials = [userName: s3AccessKey, passphrase: s3SecretAccessKey]
+                    configuration = configurations.deployerJars
+                    repository(url: "s3://maven.springframework.org/milestone") {
+                        authentication(s3credentials)
+                    }
+                    snapshotRepository(url: "s3://maven.springframework.org/snapshot") {
+                        authentication(s3credentials)
+                    }
+            }
+        }
+    }
+}

@@ -1,0 +1,135 @@
+// -----------------------------------------------------------------------------
+// task definitions related to releasing the project
+// -----------------------------------------------------------------------------
+
+import org.springframework.build.gradle.tasks.Login;
+import org.springframework.build.gradle.tasks.UploadDist;
+import org.springframework.build.gradle.tasks.TarUpload;
+
+def docsDir = new File(project(':docs/reference').buildDir, 'docs')
+def samplesDir = new File(project.rootDir, 'spring-amqp-samples')
+
+// `gradle apidocs` will generate javadoc for all product sources
+task apidocs(type: Javadoc) {
+    destinationDir = new File(buildDir, 'apidocs')
+    title = "Spring AMQP $version API"
+    destinationDir = new File(buildDir, 'apidocs')
+    optionsFile = file("$buildDir/tmp/javadoc.options")
+    options.stylesheetFile = new File("$rootDir/docs/apidocs/spring-javadoc.css")
+    options.overview = "$rootDir/docs/apidocs/overview.html"
+    options.docFilesSubDirs = true
+
+    source javaprojects.collect {project ->
+        project.sourceSets.main.allJava
+    }
+
+    classpath = files(javaprojects.collect {project ->
+        project.sourceSets.main.compileClasspath
+    })
+
+    // copy the images from the doc-files dir over to the target
+    doLast() {
+        copy {
+            from "docs/apidocs/doc-files"
+            into "build/apidocs/doc-files"
+        }
+    }
+}
+
+// `gradle dist` will build the zip distribution
+task dist(type: Zip) {
+    destinationDir = new File("$buildDir")
+    archiveName = "${project.name}-${project.version}.zip"
+    def zipRootDir = "${project.name}-${project.version}"
+    into(zipRootDir) {
+        // include all changelog.txt, readme.txt, etc in the root dir
+        from("$rootDir/docs/txt") {
+            include '*.txt'
+        }
+        // add the product of `gradle apidocs` to the dist zip
+        into('docs/javadoc') {
+            from apidocs.destinationDir
+        }
+        // add the product of `gradle doc` to the dist zip
+        into('docs/reference') {
+            from docsDir
+        }
+        // add everything in the spring-amqp-samples directory
+        into('samples') {
+            from samplesDir
+        }
+        // add all jars and source jars from all java projects
+        into('dist') {
+            from javaprojects.collect {project -> project.libsDir }
+        }
+    }
+}
+
+dist {
+    dependsOn apidocs, ':docs/reference:doc', subprojects.collect { "$it.path:assemble" }
+    doLast {
+        ant.checksum(file: archivePath, algorithm: 'SHA1', fileext: '.sha1')
+    }
+}
+
+configurations {
+    antlibs
+}
+
+dependencies {
+    antlibs "org.springframework.build:org.springframework.build.aws.ant:3.0.3.RELEASE",
+            "net.java.dev.jets3t:jets3t:0.6.1"
+}
+
+task uploadDist(dependsOn: dist, type: UploadDist) {
+    archiveFile = dist.archivePath
+    shaFile = "${dist.archivePath}.sha1" as File
+    archiveName = dist.archiveName
+    classpath = configurations.antlibs
+}
+
+// more upload stuff
+task docSiteLogin(type: Login) {
+    if (project.hasProperty('sshHost')) {
+        host = project.property('sshHost')
+    }
+}
+
+// Define remoteSiteDir and sshHost in gradle.properties
+def remoteDocsDir = null
+
+if (hasProperty('remoteSiteDir')) {
+    remoteDocsDir="$remoteSiteDir/docs/1.0.x"
+}
+
+configurations {
+    scpAntTask
+}
+
+dependencies {
+    scpAntTask("org.apache.ant:ant-jsch:1.8.1")
+}
+
+task uploadApidocs(type: TarUpload) {
+    dependsOn apidocs
+    classifier = 'apidocs'
+    remoteDir = remoteDocsDir
+    login = docSiteLogin
+    classpath = configurations.scpAntTask
+
+    into('apidocs') {
+        from apidocs.destinationDir
+    }
+}
+
+task uploadDoc(type: TarUpload) {
+    dependsOn ':docs/reference:doc'
+    classifier = 'doc'
+    remoteDir = remoteDocsDir
+    login = docSiteLogin
+    classpath = configurations.scpAntTask
+
+    into('reference') {
+        from docsDir
+    }
+}

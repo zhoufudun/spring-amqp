@@ -1,0 +1,2 @@
+include 'spring-amqp-core', 'spring-otp', 'spring-rabbit',
+        'spring-rabbit-admin', 'docs/reference'

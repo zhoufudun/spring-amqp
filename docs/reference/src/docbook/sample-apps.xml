@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="sample-apps"
+    xmlns:xlink="http://www.w3.org/1999/xlink">
+  <title>Sample Applications</title>
+
+  <section>
+    <title>Introduction</title>
+
+    <para>Introduction</para>
+  </section>
+
+  <section>
+    <title>Hello World</title>
+
+    <section id="direct-exchange">
+      <title>Direct Exchange - P2P</title>
+
+      <para>Direct exchange</para>
+    </section>
+
+    <section>
+      <title>Topic Exchange - Pub/Sub</title>
+
+      <para>Topic Exchange</para>
+    </section>
+  </section>
+
+  <section>
+    <title>Stock Trading</title>
+
+    <para>Stock Trading</para>
+  </section>
+</chapter>

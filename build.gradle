@@ -1,0 +1,113 @@
+// -----------------------------------------------------------------------------
+// main gradle build file for Spring AMQP
+// -----------------------------------------------------------------------------
+import org.springframework.build.Version;
+
+// -----------------------------------------------------------------------------
+// configuration for all projects including this one (the root project)
+// -----------------------------------------------------------------------------
+allprojects {
+    version = new Version('1.0.0.BUILD-SNAPSHOT')
+
+    repositories {
+        mavenRepo urls: "file://" + System.properties['user.home'] + "/.m2/repository"
+        mavenCentral()
+        mavenRepo urls: 'http://repository.springsource.com/maven/bundles/milestone'
+        mavenRepo urls: 'http://maven.springframework.org/snapshot/'
+        mavenRepo urls: 'http://repository.springsource.com/maven/bundles/release'
+        mavenRepo urls: 'http://repository.springsource.com/maven/bundles/external'
+    }
+}
+
+// -----------------------------------------------------------------------------
+// configuration for all subprojects
+// see: settings.gradle for list of all subprojects
+// -----------------------------------------------------------------------------
+subprojects { }
+
+// -----------------------------------------------------------------------------
+// configuration for all java subprojects
+// all subprojects that start with spring-* are assumed to be java projects
+// -----------------------------------------------------------------------------
+javaprojects = subprojects.findAll { project -> project.name.startsWith('spring-') }
+
+configure(javaprojects) {
+    apply plugin: 'java'
+    apply plugin: 'eclipse'
+    apply from: "$rootDir/buildSrc/bundlor.gradle"
+    apply from: "$rootDir/buildSrc/maven.gradle"
+
+    group = 'org.springframework.amqp'
+    springVersion = '3.0.3.RELEASE'
+
+    // dependencies that are common across all java projects
+    dependencies {
+        compile ('log4j:log4j:1.2.15') {
+            exclude group: 'javax.mail', name: 'mail'
+            exclude group: 'javax.jms', name: 'jms'
+            exclude group: 'com.sun.jdmk', name: 'jmxtools'
+            exclude group: 'com.sun.jmx', name: 'jmxri'
+        }
+        compile 'org.slf4j:jcl-over-slf4j:1.5.10'
+        compile 'org.slf4j:slf4j-api:1.5.10'
+        runtime 'org.slf4j:slf4j-log4j12:1.5.10'
+        testCompile 'junit:junit:4.7'
+    }
+}
+
+// -----------------------------------------------------------------------------
+// import tasks related to releasing and managing the project
+// -----------------------------------------------------------------------------
+apply from: "$rootDir/buildSrc/release.gradle"
+apply from: "$rootDir/buildSrc/wrapper.gradle"
+
+// -----------------------------------------------------------------------------
+// configuration for each individual subproject
+// -----------------------------------------------------------------------------
+project('spring-amqp-core') {
+    dependencies {
+        compile "org.springframework:spring-core:$springVersion"
+        compile "org.springframework:spring-oxm:$springVersion"
+        compile 'org.codehaus.jackson:jackson-mapper-asl:1.4.3'
+    }
+}
+
+project('spring-otp') {
+    dependencies {
+        compile "org.springframework:spring-beans:$springVersion"
+        compile 'org.erlang.otp:jinterface:1.5.3'
+    }
+}
+
+project('spring-rabbit') {
+    dependencies {
+        compile project(':spring-amqp-core')
+        compile 'com.rabbitmq:amqp-client:1.8.0'
+        compile "org.springframework:spring-core:$springVersion"
+        compile "org.springframework:spring-beans:$springVersion"
+        compile "org.springframework:spring-aop:$springVersion"
+        compile "org.springframework:spring-context:$springVersion"
+        compile "org.springframework:spring-oxm:$springVersion"
+        compile "org.springframework:spring-tx:$springVersion"
+        testCompile 'org.mockito:mockito-all:1.8.4'
+    }
+}
+
+project('spring-rabbit-admin') {
+    dependencies {
+        compile project(':spring-amqp-core')
+        compile project(':spring-otp')
+        compile project(':spring-rabbit')
+        compile 'com.rabbitmq:amqp-client:1.8.0'
+        compile "org.springframework:spring-aop:$springVersion"
+        compile "org.springframework:spring-context:$springVersion"
+        compile "org.springframework:spring-oxm:$springVersion"
+        compile "org.springframework:spring-test:$springVersion"
+        compile "org.springframework:spring-tx:$springVersion"
+        compile 'junit:junit:4.7'
+        testCompile 'org.erlang.otp:jinterface:1.5.3'
+        testCompile "org.springframework:spring-beans:$springVersion"
+        testCompile "org.springframework:spring-core:$springVersion"
+    }
+}
+

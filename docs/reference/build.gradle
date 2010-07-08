@@ -1,0 +1,35 @@
+apply plugin: 'base'
+apply plugin: 'docbook'
+
+[docbookHtml, docbookFoPdf, docbookHtmlSingle]*.sourceFileName = 'index.xml';
+
+docbookHtml.stylesheet = new File(projectDir, 'src/xsl/html-custom.xsl')
+docbookHtmlSingle.stylesheet = new File(projectDir, 'src/xsl/html-single-custom.xsl')
+docbookFoPdf.stylesheet = new File(projectDir, 'src/xsl/pdf-custom.xsl')
+def imagesDir = new File(projectDir, 'src/docbook/images');
+docbookFoPdf.admonGraphicsPath = "${imagesDir}/"
+
+task expandDocVariables {
+    copy {
+        into('build/docbook')
+        from('src/docbook') {
+            exclude '**/*.xml'
+        }
+    }
+    copy {
+        into('build/docbook')
+        from('src/docbook') {
+            include '**/*.xml'
+        }
+        expand(version: "$version")
+    }
+}
+
+task doc (dependsOn: [expandDocVariables, docbookHtml, docbookHtmlSingle, docbookFoPdf]) << {
+    resourcesDir = new File(projectDir, 'src/resources')
+    ant {
+        docsDir = new File(buildDir, 'docs')
+        copy(toDir: docsDir) {fileset(dir: resourcesDir)}
+        copy(toDir: new File(docsDir, 'images')) {fileset(dir: imagesDir)}
+    }
+}

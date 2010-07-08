@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="quick-tour"
+    xmlns:xlink="http://www.w3.org/1999/xlink">
+  <title>Quick Tour for the impatient</title>
+
+  <section>
+    <title>Introduction</title>
+
+    <para>This is the 5 minute tour to get started with Spring AMQP.</para>
+  </section>
+</chapter>
