@@ -8,21 +8,6 @@ task sourceJar(type: Jar) {
     from sourceSets.main.java
 }
 
-task writePom {
-    generatedPomFileName = "pom-generated.xml"
-
-    // participate in incremental build: do not execute if the classpath hasn't changed!
-    inputs.files(configurations.runtime) // includes configurations.compile
-
-    // enable partial cleaning with `gradle cleanWritePom`
-    // and incremental build - if it's been removed by someone it'll be regenerated
-    outputs.files(generatedPomFileName)
-
-    doFirst {
-        pom().writeTo(generatedPomFileName)
-    }
-}
-
 // upload stuff
 
 // check that upload-related properties are defined and fail early if not

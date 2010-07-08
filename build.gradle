@@ -8,7 +8,7 @@ import org.springframework.build.Version;
 // -----------------------------------------------------------------------------
 allprojects {
     group = 'org.springframework.amqp'
-    version = new Version('1.0.0.RELEASE')
+    version = new Version('1.0.0.BUILD-SNAPSHOT')
 
     repositories {
         mavenRepo urls: "file://" + System.properties['user.home'] + "/.m2/repository"
@@ -27,11 +27,6 @@ allprojects {
 // -----------------------------------------------------------------------------
 subprojects { }
 
-// -----------------------------------------------------------------------------
-// configuration for all java subprojects
-// all subprojects that start with spring-* are assumed to be java projects
-// all subprojects that start with spring-amqp-samples are assumed to be samples
-// -----------------------------------------------------------------------------
 javaprojects = subprojects.findAll {
     project -> project.name.startsWith('spring-')
 }
@@ -42,16 +37,33 @@ sampleprojects = subprojects.findAll {
 
 coreprojects = javaprojects - sampleprojects
 
+// -----------------------------------------------------------------------------
+// configuration for all java subprojects
+// all subprojects that start with spring-* are assumed to be java projects
+// all subprojects that start with spring-amqp-samples are assumed to be samples
+// -----------------------------------------------------------------------------
 configure(javaprojects) {
-    erlangLicense = false
     apply plugin: 'java'
     apply plugin: 'eclipse'
-    apply from: "$rootDir/buildSrc/bundlor.gradle"
-    apply from: "$rootDir/buildSrc/maven.gradle"
 
     springVersion = '3.0.3.RELEASE'
 
     // dependencies that are common across all java projects
+    dependencies {
+        testCompile 'junit:junit:4.7'
+    }
+}
+
+// -----------------------------------------------------------------------------
+// configuration for all core (non-sample) java subprojects
+// all subprojects that start with spring-* are assumed to be java projects
+// all subprojects that start with spring-amqp-samples are assumed to be samples
+// -----------------------------------------------------------------------------
+configure(coreprojects) {
+    erlangLicense = false
+    apply from: "$rootDir/buildSrc/bundlor.gradle"
+    apply from: "$rootDir/buildSrc/maven.gradle"
+
     dependencies {
         compile ('log4j:log4j:1.2.15') {
             exclude group: 'javax.mail', name: 'mail'
@@ -62,14 +74,73 @@ configure(javaprojects) {
         compile 'org.slf4j:jcl-over-slf4j:1.5.10'
         compile 'org.slf4j:slf4j-api:1.5.10'
         runtime 'org.slf4j:slf4j-log4j12:1.5.10'
-        testCompile 'junit:junit:4.7'
     }
 }
 
-configure(coreprojects) {
-}
-
 configure(sampleprojects) {
+    apply plugin: 'maven'
+    group = "${group}.samples"
+
+    dependencies {
+        runtime 'log4j:log4j:1.2.14'
+    }
+
+    task writePom {
+        generatedPomFileName = "pom.xml"
+
+        // participate in incremental build: do not execute if no change in classpath
+        inputs.files(configurations.runtime) // includes configurations.compile
+
+        // enable partial cleaning with `gradle cleanWritePom`
+        // and incremental build - if it's been removed by someone it'll be regenerated
+        //outputs.files(generatedPomFileName)
+
+        artifactId = null
+        artifactName = null
+        artifactDescription = null
+
+        doLast() {
+            p = pom {
+                project {
+                    artifactId = artifactId
+                    name = artifactName
+                    description = artifactDescription
+                    // TODO: the following is not valid syntax
+                    //properties {
+                    //    project.build.sourceEncoding = 'UTF8'
+                    //}
+                    build {
+                        plugins {
+                            plugin {
+                                groupId = 'org.apache.maven.plugins'
+                                artifactId = 'maven-compiler-plugin'
+                                configuration {
+                                    source = '1.5'
+                                    target = '1.5'
+                                }
+                            }
+                            plugin {
+                                groupId = 'org.apache.maven.plugins'
+                                artifactId = 'maven-surefire-plugin'
+                                configuration {
+                                    includes {
+                                        include = '**/*Tests.java'
+                                    }
+                                    excludes {
+                                        exclude = '**/*Abstract*.java'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            p.whenConfigured { pom -> pom.artifactId = artifactId }
+            p.writeTo(generatedPomFileName)
+        }
+
+        processResources.dependsOn writePom
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -79,7 +150,7 @@ apply from: "$rootDir/buildSrc/release.gradle"
 apply from: "$rootDir/buildSrc/wrapper.gradle"
 
 // -----------------------------------------------------------------------------
-// configuration for each individual subproject
+// configuration for each individual core java subproject
 // -----------------------------------------------------------------------------
 project('spring-amqp-core') {
     dependencies {
@@ -129,10 +200,16 @@ project('spring-rabbit-admin') {
     }
 }
 
-// --
-// sample project configuration
-// --
+// -----------------------------------------------------------------------------
+// configuration for each individual sample subproject
+// see configure(sampleprojects) above for general config
+// -----------------------------------------------------------------------------
 project('spring-amqp-samples/helloworld') {
+    writePom {
+        artifactId = 'helloworld'
+        artifactName = 'Spring AMQP Hello World'
+        artifactDescription = 'Shows the usage of Spring AMQP integration classes'
+    }
     dependencies {
         compile project(':spring-amqp-core')
         compile project(':spring-rabbit')
