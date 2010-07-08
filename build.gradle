@@ -14,6 +14,7 @@ allprojects {
         mavenCentral()
         mavenRepo urls: 'http://repository.springsource.com/maven/bundles/milestone'
         mavenRepo urls: 'http://maven.springframework.org/snapshot/'
+        mavenRepo urls: 'http://maven.springframework.org/release' // necessary for aws.maven dependency
         mavenRepo urls: 'http://repository.springsource.com/maven/bundles/release'
         mavenRepo urls: 'http://repository.springsource.com/maven/bundles/external'
     }
