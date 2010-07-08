@@ -10,7 +10,6 @@ import org.gradle.api.tasks.TaskAction;
  */
 class Login extends DefaultTask {
 
-    @Input
     String host
     String username
     String password

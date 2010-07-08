@@ -13,7 +13,6 @@ class TarUpload extends Tar {
     @Input
     String remoteDir
 
-    @Input
     Login login
 
     @InputFiles
@@ -35,6 +34,7 @@ class TarUpload extends Tar {
         String host = login.host
 
         project.ant {
+            // TODO: hook in a listener via Jsch, or ivy resolver, etc.
             taskdef(name: 'scp',
                 classname: 'org.apache.tools.ant.taskdefs.optional.ssh.Scp', classpath: classpath.asPath)
             taskdef(name: 'sshexec',
