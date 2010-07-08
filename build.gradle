@@ -31,11 +31,17 @@ subprojects { }
 // all subprojects that start with spring-* are assumed to be java projects
 // all subprojects that start with spring-amqp-samples are assumed to be samples
 // -----------------------------------------------------------------------------
-javaprojects = subprojects.findAll { project -> project.name.startsWith('spring-') }
-sampleprojects = subprojects.findAll { project -> project.name.startsWith('spring-amqp-samples') }
+javaprojects = subprojects.findAll {
+    project -> project.name.startsWith('spring-')
+}
+
+sampleprojects = subprojects.findAll {
+    project -> project.name.startsWith('spring-amqp-samples')
+}
+
 coreprojects = javaprojects - sampleprojects
 
-configure(coreprojects) {
+configure(javaprojects) {
     apply plugin: 'java'
     apply plugin: 'eclipse'
     apply from: "$rootDir/buildSrc/bundlor.gradle"
@@ -57,6 +63,12 @@ configure(coreprojects) {
         runtime 'org.slf4j:slf4j-log4j12:1.5.10'
         testCompile 'junit:junit:4.7'
     }
+}
+
+configure(coreprojects) {
+}
+
+configure(sampleprojects) {
 }
 
 // -----------------------------------------------------------------------------
@@ -115,3 +127,21 @@ project('spring-rabbit-admin') {
     }
 }
 
+// --
+// sample project configuration
+// --
+project('spring-amqp-samples/helloworld') {
+    dependencies {
+        compile project(':spring-amqp-core')
+        compile project(':spring-rabbit')
+        compile project(':spring-rabbit-admin')
+        compile 'com.rabbitmq:amqp-client:1.8.0'
+        compile "org.springframework:spring-aop:$springVersion"
+        compile "org.springframework:spring-oxm:$springVersion"
+        runtime "cglib:cglib-nodep:2.2"
+        runtime "aspectj:aspectjrt:1.5.4"
+        runtime "aspectj:aspectjweaver:1.5.4"
+        runtime "org.springframework:spring-context-support:$springVersion"
+        testCompile "org.springframework:spring-test:$springVersion"
+    }
+}
