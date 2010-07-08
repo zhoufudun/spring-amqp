@@ -29,10 +29,13 @@ subprojects { }
 // -----------------------------------------------------------------------------
 // configuration for all java subprojects
 // all subprojects that start with spring-* are assumed to be java projects
+// all subprojects that start with spring-amqp-samples are assumed to be samples
 // -----------------------------------------------------------------------------
 javaprojects = subprojects.findAll { project -> project.name.startsWith('spring-') }
+sampleprojects = subprojects.findAll { project -> project.name.startsWith('spring-amqp-samples') }
+coreprojects = javaprojects - sampleprojects
 
-configure(javaprojects) {
+configure(coreprojects) {
     apply plugin: 'java'
     apply plugin: 'eclipse'
     apply from: "$rootDir/buildSrc/bundlor.gradle"
