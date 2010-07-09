@@ -66,7 +66,7 @@ task dist(type: Zip) {
 }
 
 dist {
-    dependsOn apidocs, ':docs:reference:doc', subprojects.collect { "$it.path:assemble" }
+    dependsOn apidocs, ':docs:reference:doc', ':docs:reference:assemble'
     doLast {
         ant.checksum(file: archivePath, algorithm: 'SHA1', fileext: '.sha1')
     }
