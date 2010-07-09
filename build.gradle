@@ -106,9 +106,7 @@ configure(sampleprojects) {
                     name = artifactName
                     description = artifactDescription
                     properties {
-                        // TODO: nothing gets written to <properties/>
-                        //       because of dotted syntax
-                        project.build.sourceEncoding = 'UTF8'
+                        setProperty('project.build.sourceEncoding', 'UTF8')
                     }
                     build {
                         plugins {
@@ -266,7 +264,7 @@ def rabbitServerIsRunning() {
         def port = 5672
         print "is rabbitmq-server running on ${port}: "
         s = new java.net.Socket("localhost", port)
-        println "OK"
+        println "RUNNING"
         return true
     } catch (java.net.ConnectException ex) {
         println "NOT RUNNING"
