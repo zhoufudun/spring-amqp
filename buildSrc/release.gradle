@@ -9,64 +9,75 @@ import org.springframework.build.gradle.tasks.TarUpload;
 def docsDir = new File(project(':docs:reference').buildDir, 'docs')
 def samplesDir = new File(project.rootDir, 'spring-amqp-samples')
 
-// `gradle apidocs` will generate javadoc for all product sources
+// `gradle apidocs` will generate javadoc for all core production sources
 task apidocs(type: Javadoc) {
-    destinationDir = new File(buildDir, 'apidocs')
-    title = "Spring AMQP $version API"
-    destinationDir = new File(buildDir, 'apidocs')
-    optionsFile = file("$buildDir/tmp/javadoc.options")
-    options.stylesheetFile = new File("$rootDir/docs/apidocs/spring-javadoc.css")
-    options.overview = "$rootDir/docs/apidocs/overview.html"
-    options.docFilesSubDirs = true
 
-    source javaprojects.collect {project ->
+    srcDir = file("${rootDir}/docs/apidocs")
+    destinationDir = file("${buildDir}/apidocs")
+    tmpDir = file("${buildDir}/tmp")
+    optionsFile = file("${tmpDir}/apidocs/javadoc.options")
+    options.stylesheetFile = file("${srcDir}/spring-javadoc.css")
+    options.overview = "${srcDir}/overview.html"
+    options.docFilesSubDirs = true
+    title = "Spring AMQP ${version} API"
+
+    source coreprojects.collect {project ->
         project.sourceSets.main.allJava
     }
 
-    classpath = files(javaprojects.collect {project ->
+    classpath = files(coreprojects.collect {project ->
         project.sourceSets.main.compileClasspath
     })
 
     // copy the images from the doc-files dir over to the target
     doLast() {
+        println "src: ${srcDir}, dest: ${destinationDir}"
         copy {
-            from "docs/apidocs/doc-files"
-            into "build/apidocs/doc-files"
+            from new File($srcDir, 'doc-files')
+            into new File($destinationDir, 'doc-files')
         }
     }
 }
 
 // `gradle dist` will build the zip distribution
-task dist(type: Zip) {
-    destinationDir = new File("$buildDir")
+task dist(type: Zip, dependsOn: ['apidocs', ':docs:reference:doc', ':docs:reference:assemble']) {
+
+    destinationDir = file("${buildDir}")
     archiveName = "${project.name}-${project.version}.zip"
     def zipRootDir = "${project.name}-${project.version}"
+
+    // set up outputs for use by incremental build and by tasks like 'cleanDist'
+    // the archive zip file will be added automatically to outputs.files
+    // but we must add the sha1 checksum ourselves
+    outputs.files file("${destinationDir}/${archiveName}.sha1")
+
     into(zipRootDir) {
         // include all changelog.txt, readme.txt, etc in the root dir
         from("$rootDir/docs/txt") {
-            include '*.txt'
+            include '*.txt' // e.g.: license.txt
         }
         // add the product of `gradle apidocs` to the dist zip
         into('docs/javadoc') {
             from apidocs.destinationDir
         }
         // add the product of `gradle doc` to the dist zip
-        into('docs:reference') {
+        into('docs/reference') {
             from docsDir
         }
         // add everything in the spring-amqp-samples directory
         into('samples') {
-            from samplesDir
+            from(samplesDir) {
+                exclude '*/build'   // e.g.: helloworld/build
+                exclude '*/target'  // e.g.: helloworld/target
+            }
         }
-        // add all jars and source jars from all java projects
+        // add all jars and source jars from all core java projects
+        // (i.e.: don't include sample project jars!)
         into('dist') {
-            from javaprojects.collect {project -> project.libsDir }
+            from coreprojects.collect {project -> project.libsDir }
         }
     }
-}
 
-dist {
-    dependsOn apidocs, ':docs:reference:doc', ':docs:reference:assemble'
     doLast {
         ant.checksum(file: archivePath, algorithm: 'SHA1', fileext: '.sha1')
     }
@@ -133,3 +144,30 @@ task uploadDoc(type: TarUpload) {
         from docsDir
     }
 }
+
+task(cleanDist) << {
+    dist.outputs.files.each { file ->
+        file.delete()
+    }
+}
+
+task(cleanApidocs) << {
+    // TODO: done quickly, clean this up
+    apidocs.destinationDir.deleteDir()
+    apidocs.tmpDir.deleteDir()
+    apidocs.outputs.files.each { file ->
+        file.delete()
+    }
+}
+
+task('clean') << {
+    if(file(buildDir).listFiles()?.size() == 0) {
+        buildDir.delete()
+    } else {
+        println "did not remove [${buildDir}] as it is not empty"
+    }
+}
+clean.dependsOn cleanApidocs, cleanDist
+
+
+
