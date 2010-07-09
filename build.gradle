@@ -28,12 +28,10 @@ allprojects {
 subprojects { }
 
 javaprojects = subprojects.findAll {
-    project -> project.name.startsWith('spring-')
+    project -> project.path.startsWith(':spring-') && project != project.project(':spring-amqp-samples')
 }
 
-sampleprojects = subprojects.findAll {
-    project -> project.name.startsWith('spring-amqp-samples')
-}
+sampleprojects = project(':spring-amqp-samples').subprojects
 
 coreprojects = javaprojects - sampleprojects
 
@@ -142,7 +140,7 @@ configure(sampleprojects) {
             p.writeTo(generatedPomFileName)
         }
 
-        processResources.dependsOn writePom
+        processResources.dependsOn writePom, eclipse
     }
 }
 
@@ -207,7 +205,7 @@ project('spring-rabbit-admin') {
 // configuration for each individual sample subproject
 // see configure(sampleprojects) above for general config
 // -----------------------------------------------------------------------------
-project('spring-amqp-samples/helloworld') {
+project(':spring-amqp-samples:helloworld') {
     dependencies {
         compile project(':spring-amqp-core')
         compile project(':spring-rabbit')
@@ -229,7 +227,7 @@ project('spring-amqp-samples/helloworld') {
     }
 }
 
-project('spring-amqp-samples/stocks') {
+project(':spring-amqp-samples:stocks') {
     dependencies {
         compile project(':spring-amqp-core')
         compile project(':spring-rabbit')

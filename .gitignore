@@ -5,3 +5,5 @@ build
 .classpath.old
 .springBeans
 *.swp
+.classpath
+.project

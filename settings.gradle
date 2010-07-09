@@ -1,7 +1,7 @@
-include 'docs/reference',
+include 'docs:reference',
         'spring-amqp-core',
         'spring-otp',
         'spring-rabbit',
         'spring-rabbit-admin',
-        'spring-amqp-samples/helloworld',
-        'spring-amqp-samples/stocks'
+        'spring-amqp-samples:helloworld',
+        'spring-amqp-samples:stocks'

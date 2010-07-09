@@ -6,7 +6,7 @@ import org.springframework.build.gradle.tasks.Login;
 import org.springframework.build.gradle.tasks.UploadDist;
 import org.springframework.build.gradle.tasks.TarUpload;
 
-def docsDir = new File(project(':docs/reference').buildDir, 'docs')
+def docsDir = new File(project(':docs:reference').buildDir, 'docs')
 def samplesDir = new File(project.rootDir, 'spring-amqp-samples')
 
 // `gradle apidocs` will generate javadoc for all product sources
@@ -51,7 +51,7 @@ task dist(type: Zip) {
             from apidocs.destinationDir
         }
         // add the product of `gradle doc` to the dist zip
-        into('docs/reference') {
+        into('docs:reference') {
             from docsDir
         }
         // add everything in the spring-amqp-samples directory
@@ -66,7 +66,7 @@ task dist(type: Zip) {
 }
 
 dist {
-    dependsOn apidocs, ':docs/reference:doc', subprojects.collect { "$it.path:assemble" }
+    dependsOn apidocs, ':docs:reference:doc', subprojects.collect { "$it.path:assemble" }
     doLast {
         ant.checksum(file: archivePath, algorithm: 'SHA1', fileext: '.sha1')
     }
@@ -123,7 +123,7 @@ task uploadApidocs(type: TarUpload) {
 }
 
 task uploadDoc(type: TarUpload) {
-    dependsOn ':docs/reference:doc'
+    dependsOn ':docs:reference:doc'
     classifier = 'doc'
     remoteDir = remoteDocsDir
     login = docSiteLogin
