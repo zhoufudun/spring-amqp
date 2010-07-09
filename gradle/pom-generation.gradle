@@ -1,0 +1,57 @@
+task generatePom {
+    generatedPomFileName = "pom.xml"
+
+    // participate in incremental build: do not execute if no change in classpath
+    //inputs.files(configurations.runtime) // includes configurations.compile
+
+    // enable partial cleaning with `gradle cleanWritePom`
+    // and incremental build - if it's been removed by someone it'll be regenerated
+    outputs.files(generatedPomFileName)
+
+    artifactId = null
+    artifactName = null
+    artifactDescription = null
+
+    doLast() {
+        p = pom {
+            project {
+                artifactId = artifactId
+                name = artifactName
+                description = artifactDescription
+                properties {
+                    setProperty('project.build.sourceEncoding', 'UTF8')
+                }
+                build {
+                    plugins {
+                        plugin {
+                            groupId = 'org.apache.maven.plugins'
+                            artifactId = 'maven-compiler-plugin'
+                            configuration {
+                                source = '1.5'
+                                target = '1.5'
+                            }
+                        }
+                        plugin {
+                            groupId = 'org.apache.maven.plugins'
+                            artifactId = 'maven-surefire-plugin'
+                            configuration {
+                                includes {
+                                    include = '**/*Tests.java'
+                                    include = '**/Client.java'
+                                    include = '**/Server.java'
+                                }
+                                excludes {
+                                    exclude = '**/*Abstract*.java'
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        p.whenConfigured { pom -> pom.artifactId = artifactId }
+        p.writeTo(generatedPomFileName)
+    }
+
+    processResources.dependsOn generatePom
+}

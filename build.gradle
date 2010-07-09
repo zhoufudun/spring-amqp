@@ -1,7 +1,15 @@
 // -----------------------------------------------------------------------------
 // main gradle build file for Spring AMQP
+//
+// - run `./gradlew build` to kick off a complete compile-and-test
+//
+// - the following imports are from groovy and/or java classes in buildSrc/
+//   or from jars on 'buildscript' classpath (in our case, it's all buildSrc)
+//   sources in buildSrc are compiled and available on the classpath automatically
 // -----------------------------------------------------------------------------
-import org.springframework.build.Version;
+import org.springframework.build.Version
+import static org.springframework.build.RabbitUtils.rabbitServerIsRunning
+
 
 // -----------------------------------------------------------------------------
 // configuration for all projects including this one (the root project)
@@ -15,36 +23,52 @@ allprojects {
         mavenCentral()
         mavenRepo urls: 'http://repository.springsource.com/maven/bundles/milestone'
         mavenRepo urls: 'http://maven.springframework.org/snapshot/'
-        mavenRepo urls: 'http://maven.springframework.org/release' // necessary for aws.maven dependency
+        mavenRepo urls: 'http://maven.springframework.org/release'
         mavenRepo urls: 'http://repository.springsource.com/maven/bundles/release'
         mavenRepo urls: 'http://repository.springsource.com/maven/bundles/external'
     }
 }
 
+
 // -----------------------------------------------------------------------------
 // configuration for all subprojects
+// - empty for now, but shown for completeness
+//
 // see: settings.gradle for list of all subprojects
 // -----------------------------------------------------------------------------
 subprojects { }
 
-javaprojects = subprojects.findAll {
-    project -> project.path.startsWith(':spring-') && project != project.project(':spring-amqp-samples')
-}
 
-sampleprojects = project(':spring-amqp-samples').subprojects
+// -----------------------------------------------------------------------------
+// create collections of subprojects - each will receive their own configuration
+// - all subprojects within spring-amqp-samples are 'sample projects'
+// - all subprojects that start with spring-* are 'java projects'
+// - all non-sample java projects are considered 'core projects'
+// - documentation-related subprojects are not collected here (there's just one)
+//
+// see: configure(*) sections below
+// -----------------------------------------------------------------------------
+sampleparent = project(':spring-amqp-samples')
+
+sampleprojects = sampleparent.subprojects
+
+javaprojects = subprojects.findAll { project ->
+    project.path.startsWith(':spring-') && project != sampleparent
+}
 
 coreprojects = javaprojects - sampleprojects
 
+
 // -----------------------------------------------------------------------------
 // configuration for all java subprojects
-// all subprojects that start with spring-* are assumed to be java projects
-// all subprojects that start with spring-amqp-samples are assumed to be samples
 // -----------------------------------------------------------------------------
 configure(javaprojects) {
     apply plugin: 'java'
     apply plugin: 'eclipse'
 
     springVersion = '3.0.3.RELEASE'
+    rabbitVersion = '1.8.0'
+    erlangVersion = '1.5.3'
 
     // dependencies that are common across all java projects
     dependencies {
@@ -54,13 +78,15 @@ configure(javaprojects) {
     processResources.dependsOn eclipse
 }
 
+
 // -----------------------------------------------------------------------------
 // configuration for all core (non-sample) java subprojects
-// all subprojects that start with spring-* are assumed to be java projects
-// all subprojects that start with spring-amqp-samples are assumed to be samples
+//
+// see: individual project(*) configurations below
 // -----------------------------------------------------------------------------
 configure(coreprojects) {
     erlangLicense = false
+
     apply from: "$rootDir/gradle/bundlor.gradle"
     apply from: "$rootDir/gradle/maven-deployment.gradle"
 
@@ -77,81 +103,37 @@ configure(coreprojects) {
     }
 }
 
+// -----------------------------------------------------------------------------
+// configuration for all sample projects
+//
+// see: individual project(*) configurations below
+// -----------------------------------------------------------------------------
 configure(sampleprojects) {
     apply plugin: 'maven'
-    group = "${group}.samples"
+    apply from: "$rootDir/gradle/pom-generation.gradle"
+    group = 'org.springframework.amqp.samples'
 
     dependencies {
+        compile project(':spring-amqp-core')
+        compile project(':spring-rabbit')
+        compile project(':spring-rabbit-admin')
+        compile "com.rabbitmq:amqp-client:$rabbitVersion"
+        compile "org.springframework:spring-aop:$springVersion"
+        compile "org.springframework:spring-oxm:$springVersion"
         runtime 'log4j:log4j:1.2.14'
-    }
-
-    task writePom {
-        generatedPomFileName = "pom.xml"
-
-        // participate in incremental build: do not execute if no change in classpath
-        //inputs.files(configurations.runtime) // includes configurations.compile
-
-        // enable partial cleaning with `gradle cleanWritePom`
-        // and incremental build - if it's been removed by someone it'll be regenerated
-        outputs.files(generatedPomFileName)
-
-        artifactId = null
-        artifactName = null
-        artifactDescription = null
-
-        doLast() {
-            p = pom {
-                project {
-                    artifactId = artifactId
-                    name = artifactName
-                    description = artifactDescription
-                    properties {
-                        setProperty('project.build.sourceEncoding', 'UTF8')
-                    }
-                    build {
-                        plugins {
-                            plugin {
-                                groupId = 'org.apache.maven.plugins'
-                                artifactId = 'maven-compiler-plugin'
-                                configuration {
-                                    source = '1.5'
-                                    target = '1.5'
-                                }
-                            }
-                            plugin {
-                                groupId = 'org.apache.maven.plugins'
-                                artifactId = 'maven-surefire-plugin'
-                                configuration {
-                                    includes {
-                                        include = '**/*Tests.java'
-                                        include = '**/Client.java'
-                                        include = '**/Server.java'
-                                    }
-                                    excludes {
-                                        exclude = '**/*Abstract*.java'
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            p.whenConfigured { pom -> pom.artifactId = artifactId }
-            p.writeTo(generatedPomFileName)
-        }
-
-        processResources.dependsOn writePom
+        runtime 'cglib:cglib-nodep:2.2'
+        runtime 'aspectj:aspectjrt:1.5.4'
+        runtime 'aspectj:aspectjweaver:1.5.4'
+        runtime "org.springframework:spring-context-support:$springVersion"
+        testCompile "org.springframework:spring-test:$springVersion"
     }
 }
 
-// -----------------------------------------------------------------------------
-// import tasks related to releasing and managing the project
-// -----------------------------------------------------------------------------
-apply from: "$rootDir/gradle/release.gradle"
-apply from: "$rootDir/gradle/wrapper.gradle"
 
 // -----------------------------------------------------------------------------
 // configuration for each individual core java subproject
+//
+// see: configure(javaprojects) above for general config
 // -----------------------------------------------------------------------------
 project('spring-amqp-core') {
     dependencies {
@@ -164,14 +146,14 @@ project('spring-amqp-core') {
 project('spring-otp') {
     dependencies {
         compile "org.springframework:spring-beans:$springVersion"
-        compile 'org.erlang.otp:jinterface:1.5.3'
+        compile "org.erlang.otp:jinterface:$erlangVersion"
     }
 }
 
 project('spring-rabbit') {
     dependencies {
         compile project(':spring-amqp-core')
-        compile 'com.rabbitmq:amqp-client:1.8.0'
+        compile "com.rabbitmq:amqp-client:$rabbitVersion"
         compile "org.springframework:spring-core:$springVersion"
         compile "org.springframework:spring-beans:$springVersion"
         compile "org.springframework:spring-aop:$springVersion"
@@ -184,18 +166,19 @@ project('spring-rabbit') {
 
 project('spring-rabbit-admin') {
     erlangLicense = true
+
     dependencies {
         compile project(':spring-amqp-core')
         compile project(':spring-otp')
         compile project(':spring-rabbit')
-        compile 'com.rabbitmq:amqp-client:1.8.0'
+        compile "com.rabbitmq:amqp-client:$rabbitVersion"
         compile "org.springframework:spring-aop:$springVersion"
         compile "org.springframework:spring-context:$springVersion"
         compile "org.springframework:spring-oxm:$springVersion"
         compile "org.springframework:spring-test:$springVersion"
         compile "org.springframework:spring-tx:$springVersion"
         compile 'junit:junit:4.7'
-        testCompile 'org.erlang.otp:jinterface:1.5.3'
+        testCompile "org.erlang.otp:jinterface:$erlangVersion"
         testCompile "org.springframework:spring-beans:$springVersion"
         testCompile "org.springframework:spring-core:$springVersion"
     }
@@ -203,24 +186,11 @@ project('spring-rabbit-admin') {
 
 // -----------------------------------------------------------------------------
 // configuration for each individual sample subproject
-// see configure(sampleprojects) above for general config
+//
+// see: configure(sampleprojects) above for general config
 // -----------------------------------------------------------------------------
 project(':spring-amqp-samples:helloworld') {
-    dependencies {
-        compile project(':spring-amqp-core')
-        compile project(':spring-rabbit')
-        compile project(':spring-rabbit-admin')
-        compile 'com.rabbitmq:amqp-client:1.8.0'
-        compile "org.springframework:spring-aop:$springVersion"
-        compile "org.springframework:spring-oxm:$springVersion"
-        runtime "cglib:cglib-nodep:2.2"
-        runtime "aspectj:aspectjrt:1.5.4"
-        runtime "aspectj:aspectjweaver:1.5.4"
-        runtime "org.springframework:spring-context-support:$springVersion"
-        testCompile "org.springframework:spring-test:$springVersion"
-    }
-
-    writePom {
+    generatePom {
         artifactId = 'helloworld'
         artifactName = 'Spring AMQP Hello World'
         artifactDescription = 'Shows the usage of Spring AMQP integration classes'
@@ -229,12 +199,6 @@ project(':spring-amqp-samples:helloworld') {
 
 project(':spring-amqp-samples:stocks') {
     dependencies {
-        compile project(':spring-amqp-core')
-        compile project(':spring-rabbit')
-        compile project(':spring-rabbit-admin')
-        compile 'com.rabbitmq:amqp-client:1.8.0'
-        compile "org.springframework:spring-aop:$springVersion"
-        compile "org.springframework:spring-oxm:$springVersion"
         compile "org.springframework:spring-beans:$springVersion"
         compile "org.springframework:spring-core:$springVersion"
         compile "org.springframework:spring-context:$springVersion"
@@ -242,35 +206,20 @@ project(':spring-amqp-samples:stocks') {
         compile 'org.slf4j:jcl-over-slf4j:1.5.10'
         compile 'org.slf4j:slf4j-api:1.5.10'
         runtime 'org.slf4j:slf4j-log4j12:1.5.10'
-        runtime "cglib:cglib-nodep:2.2"
-        runtime "aspectj:aspectjrt:1.5.4"
-        runtime "aspectj:aspectjweaver:1.5.4"
-        runtime "org.springframework:spring-context-support:$springVersion"
-        testCompile "org.springframework:spring-test:$springVersion"
     }
 
-    // Client and Server @Test cases need rabbitmq-server up
-    test.onlyIf { rabbitServerIsRunning() || this.hasProperty('forceServerTests') }
-
-    writePom {
+    generatePom {
         artifactId = 'stocks'
         artifactName = 'Spring Rabbit Stocks'
         artifactDescription = 'Shows the usage of Spring Rabbit integration classes'
     }
+
+    // Client and Server @Test cases need rabbitmq-server up
+    test.onlyIf { rabbitServerIsRunning() || this.hasProperty('forceServerTests') }
 }
 
-def rabbitServerIsRunning() {
-    try {
-        def port = 5672
-        print "is rabbitmq-server running on ${port}: "
-        s = new java.net.Socket("localhost", port)
-        println "RUNNING"
-        return true
-    } catch (java.net.ConnectException ex) {
-        println "NOT RUNNING"
-        println "tests will be skipped as rabbitmq-server is not running"
-        println "run with '-PforceServerTests' to force tests to run"
-        return false;
-    }
-}
-
+// -----------------------------------------------------------------------------
+// import tasks related to releasing and managing the project
+// -----------------------------------------------------------------------------
+apply from: "$rootDir/gradle/release.gradle"
+apply from: "$rootDir/gradle/wrapper.gradle"

@@ -6,6 +6,7 @@ import org.springframework.build.gradle.tasks.Login;
 import org.springframework.build.gradle.tasks.UploadDist;
 import org.springframework.build.gradle.tasks.TarUpload;
 
+
 def docsDir = new File(project(':docs:reference').buildDir, 'docs')
 def samplesDir = new File(project.rootDir, 'spring-amqp-samples')
 
@@ -30,11 +31,10 @@ task apidocs(type: Javadoc) {
     })
 
     // copy the images from the doc-files dir over to the target
-    doLast() {
-        println "src: ${srcDir}, dest: ${destinationDir}"
+    doLast { task ->
         copy {
-            from new File($srcDir, 'doc-files')
-            into new File($destinationDir, 'doc-files')
+            from file("${task.srcDir}/doc-files")
+            into file("${task.destinationDir}/doc-files")
         }
     }
 }
@@ -146,7 +146,7 @@ task uploadDoc(type: TarUpload) {
 }
 
 task(cleanDist) {
-    onlyIf() {
+    onlyIf {
         anyOutputFilesExist = false
         dist.outputs.files.each { file ->
             if (file.canRead()) {
@@ -155,7 +155,8 @@ task(cleanDist) {
         }
         return anyOutputFilesExist;
     }
-    doLast() {
+
+    doLast {
         dist.outputs.files.each { file ->
             file.delete()
         }
@@ -164,10 +165,10 @@ task(cleanDist) {
 
 // TODO: done quickly, clean this up
 task(cleanApidocs) {
-    onlyIf() {
+    onlyIf {
         apidocs.destinationDir.isDirectory()
     }
-    doLast() {
+    doLast {
         apidocs.destinationDir.deleteDir()
         apidocs.tmpDir.deleteDir()
         apidocs.outputs.files.each { file ->
@@ -177,11 +178,11 @@ task(cleanApidocs) {
 }
 
 task('clean') {
-    onlyIf() {
+    onlyIf {
         file(buildDir).isDirectory()
     }
 
-    doLast() {
+    doLast {
         if(file(buildDir).listFiles()?.size() == 0) {
             buildDir.delete()
         } else {

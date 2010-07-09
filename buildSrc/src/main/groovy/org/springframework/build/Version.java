@@ -1,6 +1,6 @@
 package org.springframework.build;
 
-import org.gradle.api.tasks.StopExecutionException;
+import org.gradle.api.InvalidUserDataException;
 
 
 public class Version {
@@ -49,7 +49,7 @@ public class Version {
         if (version.endsWith("SNAPSHOT")) return ReleaseType.SNAPSHOT;
         if (version.matches(".*\\.M[0-9]+$")) return ReleaseType.MILESTONE;
 
-        throw new StopExecutionException("unknown version scheme: " +
+        throw new InvalidUserDataException("unknown version scheme: " +
             "versions must end in (RELEASE|SNAPSHOT|M[0-9]+), " +
             "but got (" + version + ")");
     }
