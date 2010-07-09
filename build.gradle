@@ -61,8 +61,8 @@ configure(javaprojects) {
 // -----------------------------------------------------------------------------
 configure(coreprojects) {
     erlangLicense = false
-    apply from: "$rootDir/buildSrc/bundlor.gradle"
-    apply from: "$rootDir/buildSrc/maven.gradle"
+    apply from: "$rootDir/gradle/bundlor.gradle"
+    apply from: "$rootDir/gradle/maven-deployment.gradle"
 
     dependencies {
         compile ('log4j:log4j:1.2.15') {
@@ -147,8 +147,8 @@ configure(sampleprojects) {
 // -----------------------------------------------------------------------------
 // import tasks related to releasing and managing the project
 // -----------------------------------------------------------------------------
-apply from: "$rootDir/buildSrc/release.gradle"
-apply from: "$rootDir/buildSrc/wrapper.gradle"
+apply from: "$rootDir/gradle/release.gradle"
+apply from: "$rootDir/gradle/wrapper.gradle"
 
 // -----------------------------------------------------------------------------
 // configuration for each individual core java subproject

@@ -4,6 +4,6 @@ task wrapper(type: Wrapper) {
     gradleVersion = '0.9-preview-3'
     // place jar file and properties into a
     // subdirectory to avoid root dir clutter
-    jarPath = 'buildSrc/wrapper'
+    jarPath = 'gradle/wrapper'
 }
 
