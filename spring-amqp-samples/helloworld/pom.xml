@@ -21,6 +21,8 @@
         <configuration>
           <includes>
             <include>**/*Tests.java</include>
+            <include>**/Client.java</include>
+            <include>**/Server.java</include>
           </includes>
           <excludes>
             <exclude>**/*Abstract*.java</exclude>

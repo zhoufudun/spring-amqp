@@ -89,11 +89,11 @@ configure(sampleprojects) {
         generatedPomFileName = "pom.xml"
 
         // participate in incremental build: do not execute if no change in classpath
-        inputs.files(configurations.runtime) // includes configurations.compile
+        //inputs.files(configurations.runtime) // includes configurations.compile
 
         // enable partial cleaning with `gradle cleanWritePom`
         // and incremental build - if it's been removed by someone it'll be regenerated
-        //outputs.files(generatedPomFileName)
+        outputs.files(generatedPomFileName)
 
         artifactId = null
         artifactName = null
@@ -105,10 +105,11 @@ configure(sampleprojects) {
                     artifactId = artifactId
                     name = artifactName
                     description = artifactDescription
-                    // TODO: the following is not valid syntax
-                    //properties {
-                    //    project.build.sourceEncoding = 'UTF8'
-                    //}
+                    properties {
+                        // TODO: nothing gets written to <properties/>
+                        //       because of dotted syntax
+                        project.build.sourceEncoding = 'UTF8'
+                    }
                     build {
                         plugins {
                             plugin {
@@ -125,6 +126,8 @@ configure(sampleprojects) {
                                 configuration {
                                     includes {
                                         include = '**/*Tests.java'
+                                        include = '**/Client.java'
+                                        include = '**/Server.java'
                                     }
                                     excludes {
                                         exclude = '**/*Abstract*.java'
@@ -205,11 +208,6 @@ project('spring-rabbit-admin') {
 // see configure(sampleprojects) above for general config
 // -----------------------------------------------------------------------------
 project('spring-amqp-samples/helloworld') {
-    writePom {
-        artifactId = 'helloworld'
-        artifactName = 'Spring AMQP Hello World'
-        artifactDescription = 'Shows the usage of Spring AMQP integration classes'
-    }
     dependencies {
         compile project(':spring-amqp-core')
         compile project(':spring-rabbit')
@@ -223,4 +221,58 @@ project('spring-amqp-samples/helloworld') {
         runtime "org.springframework:spring-context-support:$springVersion"
         testCompile "org.springframework:spring-test:$springVersion"
     }
+
+    writePom {
+        artifactId = 'helloworld'
+        artifactName = 'Spring AMQP Hello World'
+        artifactDescription = 'Shows the usage of Spring AMQP integration classes'
+    }
 }
+
+project('spring-amqp-samples/stocks') {
+    dependencies {
+        compile project(':spring-amqp-core')
+        compile project(':spring-rabbit')
+        compile project(':spring-rabbit-admin')
+        compile 'com.rabbitmq:amqp-client:1.8.0'
+        compile "org.springframework:spring-aop:$springVersion"
+        compile "org.springframework:spring-oxm:$springVersion"
+        compile "org.springframework:spring-beans:$springVersion"
+        compile "org.springframework:spring-core:$springVersion"
+        compile "org.springframework:spring-context:$springVersion"
+        compile "com.jgoodies:forms:1.2.1"
+        compile 'org.slf4j:jcl-over-slf4j:1.5.10'
+        compile 'org.slf4j:slf4j-api:1.5.10'
+        runtime 'org.slf4j:slf4j-log4j12:1.5.10'
+        runtime "cglib:cglib-nodep:2.2"
+        runtime "aspectj:aspectjrt:1.5.4"
+        runtime "aspectj:aspectjweaver:1.5.4"
+        runtime "org.springframework:spring-context-support:$springVersion"
+        testCompile "org.springframework:spring-test:$springVersion"
+    }
+
+    // Client and Server @Test cases need rabbitmq-server up
+    test.onlyIf { rabbitServerIsRunning() || this.hasProperty('forceServerTests') }
+
+    writePom {
+        artifactId = 'stocks'
+        artifactName = 'Spring Rabbit Stocks'
+        artifactDescription = 'Shows the usage of Spring Rabbit integration classes'
+    }
+}
+
+def rabbitServerIsRunning() {
+    try {
+        def port = 5672
+        print "is rabbitmq-server running on ${port}: "
+        s = new java.net.Socket("localhost", port)
+        println "OK"
+        return true
+    } catch (java.net.ConnectException ex) {
+        println "NOT RUNNING"
+        println "tests will be skipped as rabbitmq-server is not running"
+        println "run with '-PforceServerTests' to force tests to run"
+        return false;
+    }
+}
+
