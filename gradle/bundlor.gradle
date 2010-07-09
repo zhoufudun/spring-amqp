@@ -14,6 +14,12 @@ task bundlor(dependsOn: compileJava) {
     onlyIf {
         dependsOnTaskDidWork()
     }
+
+    // the bundlor ant task writes directly to standard out
+    // redirect it to INFO level logging, which gradle will
+    // deal with gracefully
+    captureStandardOutput(LogLevel.INFO)
+
     doFirst {
         ant.taskdef(resource: 'com/springsource/bundlor/ant/antlib.xml', classpath: configurations.bundlor.asPath)
         File template = new File(projectDir, 'template.mf')
