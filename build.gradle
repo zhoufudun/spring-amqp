@@ -10,6 +10,9 @@
 import org.springframework.build.Version
 import static org.springframework.build.RabbitUtils.rabbitServerIsRunning
 
+// adds basic tasks like 'clean'
+apply plugin: 'base'
+
 
 // -----------------------------------------------------------------------------
 // configuration for all projects including this one (the root project)
