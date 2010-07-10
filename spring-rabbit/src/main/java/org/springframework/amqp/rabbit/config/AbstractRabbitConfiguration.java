@@ -22,6 +22,7 @@ import org.springframework.amqp.config.AbstractAmqpConfiguration;
 import org.springframework.amqp.core.AbstractExchange;
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.core.ChannelCallback;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
@@ -72,7 +73,7 @@ public abstract class AbstractRabbitConfiguration extends AbstractAmqpConfigurat
 	 * exclusive=true, auto-delete = true, and durable = false;
 	 * @return
 	 */
-	public Queue randomNameQueueDefinition() {
+	public Queue generatedQueue() {
 		DeclareOk declareOk = rabbitTemplate().execute(new ChannelCallback<DeclareOk>() {
 			public DeclareOk doInRabbit(Channel channel) throws Exception {
 				return channel.queueDeclare();
@@ -96,14 +97,13 @@ public abstract class AbstractRabbitConfiguration extends AbstractAmqpConfigurat
 		return this.running;
 	}
 
-	@Override
 	public void start() {
 		synchronized (this) {
 			if (this.running) {
 				return;
 			}
-			Collection<AbstractExchange> exchanges = this.applicationContext.getBeansOfType(AbstractExchange.class).values();
-			for (AbstractExchange exchange : exchanges) {
+			Collection<Exchange> exchanges = this.applicationContext.getBeansOfType(Exchange.class).values();
+			for (Exchange exchange : exchanges) {
 				this.amqpAdmin.declareExchange(exchange);
 			}
 			Collection<Queue> queues = this.applicationContext.getBeansOfType(Queue.class).values();
