@@ -28,6 +28,13 @@ public class Version {
     }
 
     /**
+     * @return 1.0.x style
+     */
+    public String getWildcardValue() {
+        return "1.0.x";
+    }
+
+    /**
      * @return the ReleaseType associated with this version
      */
     public ReleaseType getReleaseType() {

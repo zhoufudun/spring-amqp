@@ -1,13 +1,13 @@
 apply plugin: 'base'
 apply plugin: 'docbook'
 
-[docbookHtml, docbookFoPdf, docbookHtmlSingle]*.sourceFileName = 'index.xml';
+[docbookHtml, docbookPdf, docbookHtmlSingle]*.sourceFileName = 'index.xml';
 
 docbookHtml.stylesheet = new File(projectDir, 'src/xsl/html-custom.xsl')
 docbookHtmlSingle.stylesheet = new File(projectDir, 'src/xsl/html-single-custom.xsl')
-docbookFoPdf.stylesheet = new File(projectDir, 'src/xsl/pdf-custom.xsl')
+docbookPdf.stylesheet = new File(projectDir, 'src/xsl/pdf-custom.xsl')
 def imagesDir = new File(projectDir, 'src/docbook/images');
-docbookFoPdf.admonGraphicsPath = "${imagesDir}/"
+docbookPdf.admonGraphicsPath = "${imagesDir}/"
 
 task expandDocVariables {
     copy {
@@ -25,7 +25,7 @@ task expandDocVariables {
     }
 }
 
-task doc (dependsOn: [expandDocVariables, docbookHtml, docbookHtmlSingle, docbookFoPdf]) << {
+task doc (dependsOn: [expandDocVariables, docbookHtml, docbookHtmlSingle, docbookPdf]) << {
     resourcesDir = new File(projectDir, 'src/resources')
     ant {
         docsDir = new File(buildDir, 'docs')

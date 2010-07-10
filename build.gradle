@@ -8,6 +8,7 @@
 //   sources in buildSrc are compiled and available on the classpath automatically
 // -----------------------------------------------------------------------------
 import org.springframework.build.Version
+import org.springframework.build.Version.ReleaseType
 import static org.springframework.build.RabbitUtils.rabbitServerIsRunning
 
 // add basic tasks like 'clean'
@@ -91,7 +92,7 @@ configure(coreprojects) {
     erlangLicense = false
 
     apply from: "$rootDir/gradle/bundlor.gradle"
-    apply from: "$rootDir/gradle/maven-deployment.gradle"
+    //apply from: "$rootDir/gradle/maven-deployment.gradle"
 
     dependencies {
         compile ('log4j:log4j:1.2.15') {
@@ -225,5 +226,5 @@ project(':spring-amqp-samples:stocks') {
 // -----------------------------------------------------------------------------
 // import tasks related to releasing and managing the project
 // -----------------------------------------------------------------------------
-apply from: "$rootDir/gradle/release.gradle"
-apply from: "$rootDir/gradle/wrapper.gradle"
+//apply from: "$rootDir/gradle/release.gradle"
+//apply from: "$rootDir/gradle/wrapper.gradle"

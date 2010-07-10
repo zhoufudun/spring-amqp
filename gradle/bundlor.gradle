@@ -1,37 +1,69 @@
-apply plugin: 'java'
+// -----------------------------------------------------------------------------
+// Task definitions and configuration relating to the
+// SpringSource 'bundlor' OSGi manifest generation utility
+//
+// see: http://www.springsource.org/bundlor
+// -----------------------------------------------------------------------------
 
-configurations {
-    bundlor
-}
 
+// configuration that will be used when creating the ant taskdef classpath
+configurations { bundlor }
 dependencies {
     bundlor 'com.springsource.bundlor:com.springsource.bundlor.ant:1.0.0.RELEASE',
             'com.springsource.bundlor:com.springsource.bundlor:1.0.0.RELEASE',
             'com.springsource.bundlor:com.springsource.bundlor.blint:1.0.0.RELEASE'
 }
 
+/**
+ * Generates an OSGi manifest using the ant bundlor task.
+ *
+ * see: http://static.springsource.org/s2-bundlor/1.0.x/user-guide/html/ch04s02.html
+ */
 task bundlor(dependsOn: compileJava) {
-    onlyIf {
-        dependsOnTaskDidWork()
-    }
+    description = 'Generates an OSGi-compatibile MANIFEST.MF file.'
 
-    // the bundlor ant task writes directly to standard out
-    // redirect it to INFO level logging, which gradle will
-    // deal with gracefully
-    captureStandardOutput(LogLevel.INFO)
+    template = new File(projectDir, 'template.mf')
+    bundlorDir = new File("${buildDir}/bundlor")
+    manifest = file("${bundlorDir}/META-INF/MANIFEST.MF")
+
+    // incremental build configuration
+    //   if the $manifest output file already exists, the bundlor
+    //   task will be skipped *unless* any of the following are true
+    //   * template.mf has been changed
+    //   * main classpath dependencies have been changed
+    //   * main java sources for this project have been modified
+    outputs.files manifest
+    inputs.files template, project.sourceSets.main.runtimeClasspath
+
+    // inform gradle what directory this task writes so that
+    // it can be removed when issuing `gradle cleanBundlor`
+    outputs.dir bundlorDir
+
+    // tell the jar task to use the manifest bundlor creates instead of the default
+    jar.manifest.from(manifest)
 
     doFirst {
-        ant.taskdef(resource: 'com/springsource/bundlor/ant/antlib.xml', classpath: configurations.bundlor.asPath)
-        File template = new File(projectDir, 'template.mf')
-        mkdir("$buildDir/bundlor")
-        if (template.exists()) {
-            ant.bundlor(inputPath: sourceSets.main.classesDir, outputPath: "$buildDir/bundlor", manifestTemplatePath: template) {
-                property(name: 'version', value: "$version")
-                property(name: 'spring.version', value: "$springVersion")
-            }
-            jar.manifest.from("$buildDir/bundlor/META-INF/MANIFEST.MF")
+        ant.taskdef(resource: 'com/springsource/bundlor/ant/antlib.xml',
+                    classpath: configurations.bundlor.asPath)
+
+        // the bundlor ant task writes directly to standard out
+        // redirect it to INFO level logging, which gradle will
+        // deal with gracefully
+        captureStandardOutput(LogLevel.INFO)
+
+        // the ant task will throw unless this dir exists
+        if (!bundlorDir.isDirectory())
+            bundlorDir.mkdir()
+
+        // execute the ant task, and write out the $manifest file
+        ant.bundlor(inputPath: sourceSets.main.classesDir,
+                    outputPath: bundlorDir, manifestTemplatePath: template) {
+            property(name: 'version', value: "$version")
+            property(name: 'spring.version', value: "$springVersion")
         }
     }
 }
 
+// ensure that the bundlor task runs prior to the jar task
 jar.dependsOn bundlor
+

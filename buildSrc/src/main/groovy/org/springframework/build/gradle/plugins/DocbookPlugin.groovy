@@ -39,15 +39,15 @@ class DocbookPlugin implements Plugin<Project> {
     public void apply(Project project) {
         // Add the plugin tasks to the project
         Task docbookHtml = project.tasks.add('docbookHtml', DocbookHtml.class);
-        docbookHtml.setDescription('Generates chunked docbook html output');
+        docbookHtml.setDescription('Generates chunked docbook html output.');
 
         Task docbookHtmlSingle = project.tasks.add('docbookHtmlSingle', Docbook.class);
-        docbookHtmlSingle.setDescription('Generates single page docbook html output')
+        docbookHtmlSingle.setDescription('Generates single page docbook html output.')
         docbookHtmlSingle.suffix = '-single'
 
-        Task docbookFoPdf = project.tasks.add("docbookFoPdf", DocbookFoPdf.class);
-        docbookFoPdf.setDescription('Generates PDF output');
-        docbookFoPdf.extension = 'fo'
+        Task docbookPdf = project.tasks.add("docbookPdf", DocbookFoPdf.class);
+        docbookPdf.setDescription('Generates PDF docbook output.');
+        docbookPdf.extension = 'fo'
     }
 }
 

@@ -122,6 +122,7 @@ dependencies {
 }
 
 task uploadApidocs(type: TarUpload) {
+    description = "upload api javadocs to http://${sshHost}/${project.name}/docs/${project.version.wildcardValue}/apidocs"
     dependsOn apidocs
     classifier = 'apidocs'
     remoteDir = remoteDocsDir
@@ -143,4 +144,41 @@ task uploadDoc(type: TarUpload) {
     into('reference') {
         from docsDir
     }
+}
+
+task checkSnapshotDeps {
+    description = 'Checks for snapshot dependencies and aborts the build if found.'
+    doFirst() {
+        def snapshotDependencies = new HashMap<Project, List<Dependency>>()
+        javaprojects.collect { project ->
+            project.sourceSets.main.compileClasspath.allDependencies.each { dep ->
+                if (dep.version.endsWith('SNAPSHOT')) {
+                    if (snapshotDependencies[project] == null)
+                        snapshotDependencies[project] = new ArrayList<Dependency>()
+                    snapshotDependencies[project].add(dep)
+                }
+            }
+        }
+        if (snapshotDependencies.size() > 0) {
+            println "you have snapshot dependencies"
+            snapshotDependencies.each { entry ->
+                println "project ${entry.key} depends on:"
+                entry.value.each { dep ->
+                    println "    ${dep}"
+                }
+            }
+            throw new GradleException(
+                "aborting '${name}' task due to snapshot dependencies. "
+                + "supply -PignoreSnapshotDependencies to override")
+        }
+    }
+}
+
+task release(dependsOn: [uploadArchives, uploadApidocs, uploadDoc, uploadDist]) {
+    description = 'Releases the project including all artifact uploads.'
+}
+
+if (version.releaseType == ReleaseType.MILESTONE ||
+    version.releaseType == ReleaseType.RELEASE) {
+    release.dependsOn(checkSnapshotDeps)
 }
