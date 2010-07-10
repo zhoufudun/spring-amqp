@@ -10,7 +10,7 @@
 import org.springframework.build.Version
 import static org.springframework.build.RabbitUtils.rabbitServerIsRunning
 
-// adds basic tasks like 'clean'
+// add basic tasks like 'clean'
 apply plugin: 'base'
 
 
@@ -63,7 +63,7 @@ javaprojects = subprojects.findAll { project ->
 
 coreprojects = javaprojects - sampleprojects
 
-    // -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // configuration for all java subprojects
 // -----------------------------------------------------------------------------
 configure(javaprojects) {
@@ -73,6 +73,7 @@ configure(javaprojects) {
     springVersion = '3.0.3.RELEASE'
     rabbitVersion = '1.8.0'
     erlangVersion = '1.5.3'
+    slf4jVersion = '1.5.10'
 
     // dependencies that are common across all java projects
     dependencies {
@@ -99,9 +100,9 @@ configure(coreprojects) {
             exclude group: 'com.sun.jdmk', name: 'jmxtools'
             exclude group: 'com.sun.jmx', name: 'jmxri'
         }
-        compile 'org.slf4j:jcl-over-slf4j:1.5.10'
-        compile 'org.slf4j:slf4j-api:1.5.10'
-        runtime 'org.slf4j:slf4j-log4j12:1.5.10'
+        compile "org.slf4j:jcl-over-slf4j:$slf4jVersion"
+        compile "org.slf4j:slf4j-api:$slf4jVersion"
+        runtime "org.slf4j:slf4j-log4j12:$slf4jVersion"
     }
 }
 
@@ -205,9 +206,9 @@ project(':spring-amqp-samples:stocks') {
         compile "org.springframework:spring-core:$springVersion"
         compile "org.springframework:spring-context:$springVersion"
         compile "com.jgoodies:forms:1.2.1"
-        compile 'org.slf4j:jcl-over-slf4j:1.5.10'
-        compile 'org.slf4j:slf4j-api:1.5.10'
-        runtime 'org.slf4j:slf4j-log4j12:1.5.10'
+        compile "org.slf4j:jcl-over-slf4j:$slf4jVersion"
+        compile "org.slf4j:slf4j-api:$slf4jVersion"
+        runtime "org.slf4j:slf4j-log4j12:$slf4jVersion"
     }
 
     generatePom {
@@ -219,6 +220,7 @@ project(':spring-amqp-samples:stocks') {
     // Client and Server @Test cases need rabbitmq-server up
     test.onlyIf { rabbitServerIsRunning() || this.hasProperty('forceServerTests') }
 }
+
 
 // -----------------------------------------------------------------------------
 // import tasks related to releasing and managing the project
