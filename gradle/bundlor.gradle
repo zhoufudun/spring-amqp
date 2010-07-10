@@ -22,9 +22,13 @@ dependencies {
 task bundlor(dependsOn: compileJava) {
     description = 'Generates an OSGi-compatibile MANIFEST.MF file.'
 
-    template = new File(projectDir, 'template.mf')
-    bundlorDir = new File("${buildDir}/bundlor")
-    manifest = file("${bundlorDir}/META-INF/MANIFEST.MF")
+    def template = new File(projectDir, 'template.mf')
+    def bundlorDir = new File("${project.buildDir}/bundlor")
+    def manifest = file("${bundlorDir}/META-INF/MANIFEST.MF")
+
+    // inform gradle what directory this task writes so that
+    // it can be removed when issuing `gradle cleanBundlor`
+    outputs.dir bundlorDir
 
     // incremental build configuration
     //   if the $manifest output file already exists, the bundlor
@@ -35,12 +39,12 @@ task bundlor(dependsOn: compileJava) {
     outputs.files manifest
     inputs.files template, project.sourceSets.main.runtimeClasspath
 
-    // inform gradle what directory this task writes so that
-    // it can be removed when issuing `gradle cleanBundlor`
-    outputs.dir bundlorDir
+    // tell the jar task to use bundlor manifest instead of the default
+    jar.manifest.from manifest
 
-    // tell the jar task to use the manifest bundlor creates instead of the default
-    jar.manifest.from(manifest)
+    // the bundlor manifest should be evaluated as part of the jar task's
+    // incremental build
+    jar.inputs.files manifest
 
     doFirst {
         ant.taskdef(resource: 'com/springsource/bundlor/ant/antlib.xml',
@@ -58,8 +62,8 @@ task bundlor(dependsOn: compileJava) {
         // execute the ant task, and write out the $manifest file
         ant.bundlor(inputPath: sourceSets.main.classesDir,
                     outputPath: bundlorDir, manifestTemplatePath: template) {
-            property(name: 'version', value: "$version")
-            property(name: 'spring.version', value: "$springVersion")
+            property(name: 'version', value: project.version)
+            property(name: 'spring.version', value: project.springVersion)
         }
     }
 }
