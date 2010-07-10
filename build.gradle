@@ -63,8 +63,7 @@ javaprojects = subprojects.findAll { project ->
 
 coreprojects = javaprojects - sampleprojects
 
-
-// -----------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------
 // configuration for all java subprojects
 // -----------------------------------------------------------------------------
 configure(javaprojects) {
@@ -79,9 +78,6 @@ configure(javaprojects) {
     dependencies {
         testCompile 'junit:junit:4.7'
     }
-
-    // we want eclipse metadata generation to happen every time we build
-    processResources.dependsOn eclipse
 }
 
 
