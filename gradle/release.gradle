@@ -5,6 +5,7 @@
 import org.springframework.build.gradle.tasks.Login;
 import org.springframework.build.gradle.tasks.UploadDist;
 import org.springframework.build.gradle.tasks.TarUpload;
+import org.springframework.build.Version.ReleaseType
 
 
 def docsDir = new File(project(':docs:reference').buildDir, 'docs')
@@ -178,7 +179,7 @@ task release(dependsOn: [uploadArchives, uploadApidocs, uploadDoc, uploadDist]) 
     description = 'Releases the project including all artifact uploads.'
 }
 
-if (version.releaseType == ReleaseType.MILESTONE ||
-    version.releaseType == ReleaseType.RELEASE) {
+if (project.version.releaseType == ReleaseType.MILESTONE ||
+    project.version.releaseType == ReleaseType.RELEASE) {
     release.dependsOn(checkSnapshotDeps)
 }

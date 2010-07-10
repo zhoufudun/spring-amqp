@@ -68,8 +68,9 @@ coreprojects = javaprojects - sampleprojects
 // configuration for all java subprojects
 // -----------------------------------------------------------------------------
 configure(javaprojects) {
-    apply plugin: 'java'
-    apply plugin: 'eclipse'
+    apply plugin: 'java' // tasks for conventional java lifecycle
+    apply plugin: 'maven' // `gradle install` to push jars to local .m2 cache
+    apply plugin: 'eclipse' // `gradle eclipse` to generate .classpath/.project
 
     springVersion = '3.0.3.RELEASE'
     rabbitVersion = '1.8.0'
@@ -91,9 +92,11 @@ configure(javaprojects) {
 configure(coreprojects) {
     erlangLicense = false
 
+    // all core projects should be OSGi-compliant bundles
+    // add the bundlor task to ensure proper manifests
     apply from: "$rootDir/gradle/bundlor.gradle"
-    //apply from: "$rootDir/gradle/maven-deployment.gradle"
 
+    // dependencies common to all core projects
     dependencies {
         compile ('log4j:log4j:1.2.15') {
             exclude group: 'javax.mail', name: 'mail'
@@ -113,10 +116,11 @@ configure(coreprojects) {
 // see: individual project(*) configurations below
 // -----------------------------------------------------------------------------
 configure(sampleprojects) {
-    apply plugin: 'maven'
     apply from: "$rootDir/gradle/pom-generation.gradle"
+
     group = 'org.springframework.amqp.samples'
 
+    // dependencies common ta all sample projects
     dependencies {
         compile project(':spring-amqp-core')
         compile project(':spring-rabbit')
@@ -189,7 +193,7 @@ project('spring-rabbit-admin') {
 }
 
 // -----------------------------------------------------------------------------
-// configuration for each individual sample subproject
+// Configuration for each individual sample subproject
 //
 // see: configure(sampleprojects) above for general config
 // -----------------------------------------------------------------------------
@@ -224,7 +228,21 @@ project(':spring-amqp-samples:stocks') {
 
 
 // -----------------------------------------------------------------------------
-// import tasks related to releasing and managing the project
+// conditionally import tasks related to releasing and managing the project
+// depending on the role played by the current user.
+//
+// see: gradle.properties for more information on roles
 // -----------------------------------------------------------------------------
-//apply from: "$rootDir/gradle/release.gradle"
-//apply from: "$rootDir/gradle/wrapper.gradle"
+if (project.properties['role'] == 'buildmaster') {
+    // add tasks for releasing the project such as 'dist', 'uploadDist', etc.
+    apply from: "$rootDir/gradle/release.gradle"
+
+    // add management tasks like `wrapper` for generating the gradlew* scripts
+    apply from: "$rootDir/gradle/wrapper.gradle"
+
+    // if role is buildmaster, expose tasks for each core project
+    // allowing for deploying artifacts to remote m2 repositories
+    configure(coreprojects) {
+        apply from: "$rootDir/gradle/maven-deployment.gradle"
+    }
+}

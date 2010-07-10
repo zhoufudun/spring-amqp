@@ -1,14 +1,8 @@
+// -----------------------------------------------------------------------------
+// main gradle build file for Spring AMQP
+// -----------------------------------------------------------------------------
 
 import org.springframework.build.Version.ReleaseType;
-
-apply plugin: 'maven'
-
-task sourceJar(type: Jar) {
-    classifier = 'sources'
-    from sourceSets.main.java
-}
-
-// upload stuff
 
 // check that upload-related properties are defined and fail early if not
 // these properties ('s3AccessKey', etc) should be defined in
@@ -28,47 +22,90 @@ configurations {
     deployerJars
 }
 
-artifacts {
-    archives sourceJar
-}
-
 dependencies {
     deployerJars "org.springframework.build.aws:org.springframework.build.aws.maven:3.0.0.RELEASE"
 }
 
+artifacts {
+    archives sourceJar
+}
+
+
+task sourceJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.java
+}
+
+/**
+ * Deploy gradle-built artifacts to a remote maven repository. Overrides and
+ * further customizes the uploadArchives task contributed by the 'maven'
+ * plugin.
+ *
+ * The repository that artifacts are deployed to is determined conditionally
+ * based on the release type of the project version. Snapshot builds will
+ * be deployed via s3 to the springframework maven snapshot repository;
+ * milestone builds will happen via s3 as well; release builds will be deployed
+ * to the local filesystem to be sync'd via sourceforge CVS and ultimately
+ * deployed to maven central.
+ *
+ * Gradle will generate Maven poms on-the-fly during the deployment process.
+ * This process is customized to add ASL license information, and for projects
+ * that have the erlangLicense property set to true, the Erlang License will be
+ * added to the pom as well.
+ *
+ * @see 'mavenSyncRepoDir' in gradle.properties
+ * @see org.springframework.build.Version#getReleaseType
+ * @see `gradle install` for deploying artifacts to the local .m2 cache
+ * @see http://maven.apache.org/guides/mini/guide-central-repository-upload.html
+ */
 uploadArchives {
-    doFirst() {
-        repositories.mavenDeployer {
-            pom.project {
-                licenses {
+    description = "Deploy archives artifacts to " // url appended below
+
+    def releaseRepositoryUrl = "file://${mavenSyncRepoDir}"
+    def milestoneRepositoryUrl = 's3://maven.springframework.org/milestone'
+    def snapshotRepositoryUrl = 's3://maven.springframework.org/snapshot'
+
+    repositories.mavenDeployer {
+        switch (version.releaseType) {
+            case ReleaseType.RELEASE:
+                repository(url: releaseRepositoryUrl)
+                description += releaseRepositoryUrl
+                break;
+
+            case ReleaseType.MILESTONE:
+                description += milestoneRepositoryUrl
+                // fall through and pick up config below
+
+            case ReleaseType.SNAPSHOT:
+                description += snapshotRepositoryUrl
+                s3credentials = [userName: s3AccessKey, passphrase: s3SecretAccessKey]
+                configuration = configurations.deployerJars
+                repository(url: milestoneRepositoryUrl) {
+                    authentication(s3credentials)
+                }
+                snapshotRepository(url: snapshotRepositoryUrl) {
+                    authentication(s3credentials)
+                }
+                break;
+
+            default:
+                throw new GradleException("unknown ReleaseType")
+        }
+
+        pom.project {
+            licenses {
+                license {
+                    name 'The Apache Software License, Version 2.0'
+                    url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    distribution 'repo'
+                }
+                if (this.erlangLicense) {
                     license {
-                        name 'The Apache Software License, Version 2.0'
-                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        name 'The Erlang Public License, Version 1.0'
+                        url 'http://www.eddieware.org/EPL'
                         distribution 'repo'
                     }
-                    if (this.erlangLicense) {
-                        license {
-                            name 'The Erlang Public License, Version 1.0'
-                            url 'http://www.eddieware.org/EPL'
-                            distribution 'repo'
-                        }
-                    }
                 }
-            }
-
-            switch (version.releaseType) {
-                case ReleaseType.RELEASE:
-                    repository(url: 'file://' + mavenSyncRepoDir)
-                    break;
-                default: // SNAPSHOT or MILESTONE build
-                    s3credentials = [userName: s3AccessKey, passphrase: s3SecretAccessKey]
-                    configuration = configurations.deployerJars
-                    repository(url: "s3://maven.springframework.org/milestone") {
-                        authentication(s3credentials)
-                    }
-                    snapshotRepository(url: "s3://maven.springframework.org/snapshot") {
-                        authentication(s3credentials)
-                    }
             }
         }
     }
