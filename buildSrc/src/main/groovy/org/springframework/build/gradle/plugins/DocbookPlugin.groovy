@@ -32,8 +32,8 @@ import com.icl.saxon.TransformerFactoryImpl;
 /**
  * Gradle Docbook plugin implementation.
  * <p>
- * Creates three tasks: docbookHtml, docbookHtmlSingle and docbookPdf. Each task takes a single File on
- * which it operates.
+ * Creates three tasks: docbookHtml, docbookHtmlSingle and docbookPdf.
+ * Each task takes a single File on which it operates.
  */
 class DocbookPlugin implements Plugin<Project> {
     public void apply(Project project) {

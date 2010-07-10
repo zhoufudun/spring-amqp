@@ -1,6 +1,18 @@
-// -----------------------------------------------------------------------------
-// main gradle build file for Spring AMQP
-// -----------------------------------------------------------------------------
+/*
+ * Copyright 2002-2010 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import org.springframework.build.Version.ReleaseType;
 
@@ -18,27 +30,30 @@ gradle.taskGraph.whenReady {graph ->
     }
 }
 
-configurations {
-    deployerJars
-}
-
+// add a configuration with a classpath that includes our s3 maven deployer
+configurations { deployerJars }
 dependencies {
     deployerJars "org.springframework.build.aws:org.springframework.build.aws.maven:3.0.0.RELEASE"
 }
 
-artifacts {
-    archives sourceJar
-}
-
-
+/**
+ * Task that creates a source jar artifact for all main java sources.
+ */
 task sourceJar(type: Jar) {
     classifier = 'sources'
     from sourceSets.main.java
 }
 
+// Add the source jar archive to the set of artifacts for this project.
+// Note that the regular 'jar' archive is already added by default.
+artifacts {
+    archives sourceJar
+}
+
+
 /**
  * Deploy gradle-built artifacts to a remote maven repository. Overrides and
- * further customizes the uploadArchives task contributed by the 'maven'
+ * further customizes the 'uploadArchives' task contributed by the 'maven'
  * plugin.
  *
  * The repository that artifacts are deployed to is determined conditionally

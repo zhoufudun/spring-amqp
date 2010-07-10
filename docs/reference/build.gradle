@@ -1,6 +1,36 @@
+/*
+ * Copyright 2002-2010 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// -----------------------------------------------------------------------------
+// Reference documentation project build file.
+// The 'docbook' plugin applied here was written in-house and works sufficiently
+// well. However, there is an 'offical' gradle docbook plugin effort underway
+// and effort should be taken to refactor to using it
+//
+// see: http://github.com/gradle/gradle-jdocbook
+// -----------------------------------------------------------------------------
+
 apply plugin: 'base'
 apply plugin: 'docbook'
 
+
+// -----------------------------------------------------------------------------
+// Configure the three docbook* tasks that are added to the project by the
+// 'docbook' plugin.
+// -----------------------------------------------------------------------------
 [docbookHtml, docbookPdf, docbookHtmlSingle]*.sourceFileName = 'index.xml';
 
 docbookHtml.stylesheet = new File(projectDir, 'src/xsl/html-custom.xsl')
@@ -9,27 +39,48 @@ docbookPdf.stylesheet = new File(projectDir, 'src/xsl/pdf-custom.xsl')
 def imagesDir = new File(projectDir, 'src/docbook/images');
 docbookPdf.admonGraphicsPath = "${imagesDir}/"
 
-task expandDocVariables {
+
+/**
+ * Expand ${...} variables within docbook sources.  This task is a workaround
+ * accomodating the fact that the current docbook plugin has no way of
+ * parameterizing and replacing normal XML entities.
+ *
+ * This is a good example of what should be a 'private' task. This feature is
+ * not yet supported in Gradle but is on the roadmap.
+ *
+ * @see http://jira.codehaus.org/browse/GRADLE-1026
+ */
+task preprocessDocbookSources {
+    description = 'Expands ${...} variables within docbook sources.'
+    docbookSrcDir = new File(projectDir, 'src/docbook')
+    docbookBuildDir = new File(projectDir, 'build/docbook')
+
+    // copy all non-xml sources
     copy {
-        into('build/docbook')
-        from('src/docbook') {
-            exclude '**/*.xml'
-        }
+        into(docbookBuildDir)
+        from(docbookSrcDir) { exclude '**/*.xml' }
     }
+    // copy all xml sources, and expand ${...} variables along the way
+    // e.g.: ${version} needs to be replaced in the first page of the
     copy {
-        into('build/docbook')
-        from('src/docbook') {
-            include '**/*.xml'
-        }
+        into(docbookBuildDir)
+        from(docbookSrcDir) { include '**/*.xml' }
         expand(version: "$version")
     }
 }
 
-task doc (dependsOn: [expandDocVariables, docbookHtml, docbookHtmlSingle, docbookPdf]) << {
+
+/**
+ * Generate reference documentation from docbook sources.
+ */
+task doc (dependsOn: [docbookHtml, docbookHtmlSingle, docbookPdf]) << {
+    description = 'Generates reference documentation.'
+
+    docsDir = new File(buildDir, 'docs')
     resourcesDir = new File(projectDir, 'src/resources')
+
     ant {
-        docsDir = new File(buildDir, 'docs')
-        copy(toDir: docsDir) {fileset(dir: resourcesDir)}
-        copy(toDir: new File(docsDir, 'images')) {fileset(dir: imagesDir)}
+        copy(toDir: docsDir) { fileset(dir: resourcesDir) }
+        copy(toDir: new File(docsDir, 'images')) { fileset(dir: imagesDir) }
     }
 }

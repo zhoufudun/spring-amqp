@@ -1,7 +1,23 @@
+/*
+ * Copyright 2002-2010 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // -----------------------------------------------------------------------------
-// main gradle build file for Spring AMQP
+// Main gradle build file for Spring AMQP
 //
-// - run `./gradlew build` to kick off a complete compile-and-test
+// - run `./gradlew(.bat) build` to kick off a complete compile-and-test
 //
 // - the following imports are from groovy and/or java classes in buildSrc/
 //   or from jars on 'buildscript' classpath (in our case, it's all buildSrc)
@@ -11,19 +27,28 @@ import org.springframework.build.Version
 import org.springframework.build.Version.ReleaseType
 import static org.springframework.build.RabbitUtils.rabbitServerIsRunning
 
-// add basic tasks like 'clean'
+
+// add basic tasks like 'clean' and 'assemble'. allows for running
+// `gradle clean` from the root project and deleting the build directory,
+// for example
 apply plugin: 'base'
 
 
 // -----------------------------------------------------------------------------
-// configuration for all projects including this one (the root project)
+// Configuration for all projects including this one (the root project)
 //
 // see: settings.gradle for list of all subprojects
 // -----------------------------------------------------------------------------
 allprojects {
+    // group will translate to groupId during pom generation and deployment
     group = 'org.springframework.amqp'
+
+    // version will be used in maven pom generation as well as determining
+    // where artifacts should be deployed, based on release type of snapshot,
+    // milestone or release.  See Version sources in buildSrc/ for more info
     version = new Version('1.0.0.BUILD-SNAPSHOT')
 
+    // defoult set of maven repositories to be used when resolving dependencies
     repositories {
         mavenRepo urls: "file://" + System.properties['user.home'] + "/.m2/repository"
         mavenCentral()
@@ -37,7 +62,7 @@ allprojects {
 
 
 // -----------------------------------------------------------------------------
-// configuration for all subprojects
+// Configuration for all subprojects
 // - empty for now, but shown for completeness
 //
 // see: settings.gradle for list of all subprojects
@@ -46,7 +71,7 @@ subprojects { }
 
 
 // -----------------------------------------------------------------------------
-// create collections of subprojects - each will receive their own configuration
+// Create collections of subprojects - each will receive their own configuration
 // - all subprojects within spring-amqp-samples are 'sample projects'
 // - all subprojects that start with spring-* are 'java projects'
 // - all non-sample java projects are considered 'core projects'
@@ -64,8 +89,9 @@ javaprojects = subprojects.findAll { project ->
 
 coreprojects = javaprojects - sampleprojects
 
+
 // -----------------------------------------------------------------------------
-// configuration for all java subprojects
+// Configuration for all java subprojects
 // -----------------------------------------------------------------------------
 configure(javaprojects) {
     apply plugin: 'java' // tasks for conventional java lifecycle
@@ -85,11 +111,13 @@ configure(javaprojects) {
 
 
 // -----------------------------------------------------------------------------
-// configuration for all core (non-sample) java subprojects
+// Configuration for all core (non-sample) java subprojects
 //
 // see: individual project(*) configurations below
 // -----------------------------------------------------------------------------
 configure(coreprojects) {
+    // certain projects will need erlang licensing in addition to Apache.
+    // false by default, but certain projects will assign true
     erlangLicense = false
 
     // all core projects should be OSGi-compliant bundles
@@ -110,14 +138,16 @@ configure(coreprojects) {
     }
 }
 
+
 // -----------------------------------------------------------------------------
-// configuration for all sample projects
+// Configuration for all sample projects
 //
 // see: individual project(*) configurations below
 // -----------------------------------------------------------------------------
 configure(sampleprojects) {
     apply from: "$rootDir/gradle/pom-generation.gradle"
 
+    // samples group will translate to their maven groupId
     group = 'org.springframework.amqp.samples'
 
     // dependencies common ta all sample projects
@@ -139,7 +169,7 @@ configure(sampleprojects) {
 
 
 // -----------------------------------------------------------------------------
-// configuration for each individual core java subproject
+// Configuration for each individual core java subproject
 //
 // see: configure(javaprojects) above for general config
 // -----------------------------------------------------------------------------
@@ -192,6 +222,7 @@ project('spring-rabbit-admin') {
     }
 }
 
+
 // -----------------------------------------------------------------------------
 // Configuration for each individual sample subproject
 //
@@ -222,13 +253,13 @@ project(':spring-amqp-samples:stocks') {
         artifactDescription = 'Shows the usage of Spring Rabbit integration classes'
     }
 
-    // Client and Server @Test cases need rabbitmq-server up
+    // Client and Server @Test cases need a local rabbitmq-server running
     test.onlyIf { rabbitServerIsRunning() || this.hasProperty('forceServerTests') }
 }
 
 
 // -----------------------------------------------------------------------------
-// conditionally import tasks related to releasing and managing the project
+// Conditionally import tasks related to releasing and managing the project
 // depending on the role played by the current user.
 //
 // see: gradle.properties for more information on roles
@@ -240,7 +271,7 @@ if (project.properties['role'] == 'buildmaster') {
     // add management tasks like `wrapper` for generating the gradlew* scripts
     apply from: "$rootDir/gradle/wrapper.gradle"
 
-    // if role is buildmaster, expose tasks for each core project
+    // if role is 'buildmaster', expose tasks for each core project
     // allowing for deploying artifacts to remote m2 repositories
     configure(coreprojects) {
         apply from: "$rootDir/gradle/maven-deployment.gradle"
