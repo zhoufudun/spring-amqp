@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-import org.springframework.build.gradle.tasks.Login;
-import org.springframework.build.gradle.tasks.TarUpload;
-
 // -----------------------------------------------------------------------------
 // Reference documentation gradle build file.
 //
@@ -100,13 +97,6 @@ task build (dependsOn: [docbookHtml, docbookHtmlSingle, docbookPdf]) {
     }
 }
 
-// TODO: get rid of
-task docSiteLogin(type: Login) {
-    if (project.hasProperty('sshHost')) {
-        host = project.property('sshHost')
-    }
-}
-
 // Define remoteSiteDir and sshHost in gradle.properties
 def remoteDocsDir = null
 
@@ -122,18 +112,50 @@ dependencies {
 /**
  * Upload HTML and PDF reference documentation via SSH (scp).
  *
+ * TODO: remove duplication between this and :docs:api:upload task
+ *
  * @author cbeams
  * @author ltaylor
  */
-task upload(type: TarUpload, dependsOn: build) {
+task upload(type: Tar, dependsOn: build) {
     def docUrl = "http://${sshHost}/${project.name}/docs/${project.version.wildcardValue}/reference"
     description = "Uploads HTML and PDF reference documentation to ${docUrl}"
     classifier = 'reference'
     remoteDir = remoteDocsDir
-    login = docSiteLogin
-    classpath = configurations.scpAntTask
+    compression = Compression.BZIP2
 
     into('reference') {
         from build.docsDir
+    }
+
+    doLast() {
+        String username = 'cbeams'
+        String keyfile = '/Users/cbeams/.ssh/id_rsa'
+        String host = 'static.springsource.org'
+
+        project.ant {
+
+            // TODO: get progress metrics by hooking in a listener via Jsch, or ivy resolver, etc.
+            taskdef(name: 'scp',
+                classname: 'org.apache.tools.ant.taskdefs.optional.ssh.Scp', classpath: configurations.scpAntTask.asPath)
+            taskdef(name: 'sshexec',
+                classname: 'org.apache.tools.ant.taskdefs.optional.ssh.SSHExec', classpath: configurations.scpAntTask.asPath)
+
+            // make the remote dir if it doesn't exist yet
+            sshexec(host: host, username: username, keyfile: keyfile, command: "mkdir -p $remoteDir")
+
+            // copy the archive, unpack it, then delete it
+            def fqRemoteDir = "${username}@${host}:${remoteDir}"
+            def unpackCommand = "cd ${remoteDir} && tar -xjf ${archiveName}"
+            def deleteCommand = "rm ${remoteDir}/${archiveName}"
+
+            println "scp ${archivePath} -> ${fqRemoteDir}"
+            scp(file: archivePath, todir: fqRemoteDir, keyfile: keyfile)
+            println "sshexec ${unpackCommand}"
+            sshexec(host: host, username: username, keyfile: keyfile, command: unpackCommand)
+            println "sshexec ${deleteCommand}"
+            sshexec(host: host, username: username, keyfile: keyfile, command: deleteCommand)
+            println "UPLOAD SUCCESSFUL - validate by visiting ${docUrl}"
+        }
     }
 }

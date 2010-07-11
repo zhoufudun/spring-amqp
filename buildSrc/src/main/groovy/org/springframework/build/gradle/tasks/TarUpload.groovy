@@ -42,7 +42,9 @@ class TarUpload extends Tar {
     @TaskAction
     void copy() {
         super.copy();
+        println "in copy() before upload()"
         upload();
+        println "in copy() after upload()"
     }
 
     def upload() {
@@ -51,6 +53,7 @@ class TarUpload extends Tar {
         String host = 'static.springsource.org'
 
         project.ant {
+
             // TODO: get progress metrics by hooking in a listener via Jsch, or ivy resolver, etc.
             taskdef(name: 'scp',
                 classname: 'org.apache.tools.ant.taskdefs.optional.ssh.Scp', classpath: classpath.asPath)
@@ -61,9 +64,16 @@ class TarUpload extends Tar {
             sshexec(host: host, username: username, keyfile: keyfile, command: "mkdir -p $remoteDir")
 
             // copy the archive, unpack it, then delete it
-            scp(file: archivePath, todir: "$username@$host:$remoteDir", keyfile: keyfile)
-            sshexec(host: host, username: username, keyfile: keyfile, command: "cd $remoteDir && tar -xjf $archiveName")
-            sshexec(host: host, username: username, keyfile: keyfile, command: "rm $remoteDir/$archiveName")
+            def fqRemoteDir = "${username}@${host}:${remoteDir}"
+            def unpackCommand = "cd ${remoteDir} && tar -xjf ${archiveName}"
+            def deleteCommand = "rm ${remoteDir}/${archiveName}"
+
+            println "scp ${archivePath} -> ${fqRemoteDir}"
+            scp(file: archivePath, todir: fqRemoteDir, keyfile: keyfile)
+            println "sshexec ${unpackCommand}"
+            sshexec(host: host, username: username, keyfile: keyfile, command: unpackCommand)
+            println "sshexec ${deleteCommand}"
+            sshexec(host: host, username: username, keyfile: keyfile, command: deleteCommand)
         }
     }
 
