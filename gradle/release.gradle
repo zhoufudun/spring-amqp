@@ -72,18 +72,20 @@ task dist(type: Zip) {
             include '*.txt' // e.g.: license.txt
         }
         // add the product of `gradle :docs:api:build` to the dist zip
-        into('docs/javadoc') {
+        into('docs/api') {
             from tasks.getByPath(':docs:api:build').destinationDir
         }
         // add the product of `gradle :docs:reference:build` to the dist zip
         into('docs/reference') {
             from tasks.getByPath(':docs:reference:build').docsDir
         }
-        // add everything in the spring-amqp-samples directory
-        into('samples') {
-            from(new File(project.rootDir, 'spring-amqp-samples')) {
-                exclude '*/build'   // e.g.: helloworld/build
-                exclude '*/target'  // e.g.: helloworld/target
+        // add each subproject, but only add the 'src' dir and 'pom.xml'
+        project('spring-amqp-samples').subprojects.each { sample ->
+            into("${zipRootDir}/samples/${sample.name}") {
+                from(sample.projectDir) {
+                    include 'src/**/*'
+                    include 'pom.xml'
+                }
             }
         }
         // add all jars and source jars from all core java projects
