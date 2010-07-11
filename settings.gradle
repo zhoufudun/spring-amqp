@@ -19,7 +19,8 @@
  *
  * @see http://www.gradle.org/0.9-preview-3/docs/userguide/userguide_single.html#javaMultiProject
  */
-include 'docs:reference',
+include 'docs:api',
+        'docs:reference',
         'spring-amqp-core',
         'spring-otp',
         'spring-rabbit',

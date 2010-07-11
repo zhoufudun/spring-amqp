@@ -18,46 +18,15 @@
 // task definitions related to releasing the project
 // -----------------------------------------------------------------------------
 
-import org.springframework.build.gradle.tasks.Login;
 import org.springframework.build.gradle.tasks.UploadDist;
-import org.springframework.build.gradle.tasks.TarUpload;
 import org.springframework.build.Version.ReleaseType
 
 
-def docsDir = new File(project(':docs:reference').buildDir, 'docs')
 def samplesDir = new File(project.rootDir, 'spring-amqp-samples')
 
-// `gradle apidocs` will generate javadoc for all core production sources
-task apidocs(type: Javadoc) {
-
-    srcDir = file("${rootDir}/docs/apidocs")
-    destinationDir = file("${buildDir}/apidocs")
-    tmpDir = file("${buildDir}/tmp")
-    optionsFile = file("${tmpDir}/apidocs/javadoc.options")
-    options.stylesheetFile = file("${srcDir}/spring-javadoc.css")
-    options.overview = "${srcDir}/overview.html"
-    options.docFilesSubDirs = true
-    title = "Spring AMQP ${version} API"
-
-    source coreprojects.collect {project ->
-        project.sourceSets.main.allJava
-    }
-
-    classpath = files(coreprojects.collect {project ->
-        project.sourceSets.main.compileClasspath
-    })
-
-    // copy the images from the doc-files dir over to the target
-    doLast { task ->
-        copy {
-            from file("${task.srcDir}/doc-files")
-            into file("${task.destinationDir}/doc-files")
-        }
-    }
-}
-
 // `gradle dist` will build the zip distribution
-task dist(type: Zip, dependsOn: ['apidocs', ':docs:reference:doc', ':docs:reference:assemble']) {
+task dist(type: Zip, dependsOn: [':docs:api:doc', ':docs:reference:doc', ':docs:reference:assemble']) {
+    description = 'TODO'
 
     destinationDir = file("${buildDir}")
     archiveName = "${project.name}-${project.version}.zip"
@@ -68,46 +37,44 @@ task dist(type: Zip, dependsOn: ['apidocs', ':docs:reference:doc', ':docs:refere
     // but we must add the sha1 checksum ourselves
     outputs.files file("${destinationDir}/${archiveName}.sha1")
 
-    into(zipRootDir) {
-        // include all changelog.txt, readme.txt, etc in the root dir
-        from("$rootDir/docs/txt") {
-            include '*.txt' // e.g.: license.txt
-        }
-        // add the product of `gradle apidocs` to the dist zip
-        into('docs/javadoc') {
-            from apidocs.destinationDir
-        }
-        // add the product of `gradle doc` to the dist zip
-        into('docs/reference') {
-            from docsDir
-        }
-        // add everything in the spring-amqp-samples directory
-        into('samples') {
-            from(samplesDir) {
-                exclude '*/build'   // e.g.: helloworld/build
-                exclude '*/target'  // e.g.: helloworld/target
+    doLast {
+        into(zipRootDir) {
+            // include all changelog.txt, readme.txt, etc in the root dir
+            from("$rootDir/docs/txt") {
+                include '*.txt' // e.g.: license.txt
+            }
+            // add the product of `gradle :docs:api:doc` to the dist zip
+            into('docs/javadoc') {
+                from tasks.getByPath(':docs:api:doc').destinationDir
+            }
+            // add the product of `gradle :docs:reference:doc` to the dist zip
+            into('docs/reference') {
+                from tasks.getByPath(':docs:reference:doc').docsDir
+            }
+            // add everything in the spring-amqp-samples directory
+            into('samples') {
+                from(samplesDir) {
+                    exclude '*/build'   // e.g.: helloworld/build
+                    exclude '*/target'  // e.g.: helloworld/target
+                }
+            }
+            // add all jars and source jars from all core java projects
+            // (i.e.: don't include sample project jars!)
+            into('dist') {
+                from coreprojects.collect {project -> project.libsDir }
             }
         }
-        // add all jars and source jars from all core java projects
-        // (i.e.: don't include sample project jars!)
-        into('dist') {
-            from coreprojects.collect {project -> project.libsDir }
-        }
-    }
 
-    doLast {
         ant.checksum(file: archivePath, algorithm: 'SHA1', fileext: '.sha1')
     }
 }
 
-configurations {
-    antlibs
-}
-
+configurations { antlibs }
 dependencies {
     antlibs "org.springframework.build:org.springframework.build.aws.ant:3.0.3.RELEASE",
             "net.java.dev.jets3t:jets3t:0.6.1"
 }
+
 
 task uploadDist(dependsOn: dist, type: UploadDist) {
     archiveFile = dist.archivePath
@@ -116,52 +83,6 @@ task uploadDist(dependsOn: dist, type: UploadDist) {
     classpath = configurations.antlibs
 }
 
-// more upload stuff
-task docSiteLogin(type: Login) {
-    if (project.hasProperty('sshHost')) {
-        host = project.property('sshHost')
-    }
-}
-
-// Define remoteSiteDir and sshHost in gradle.properties
-def remoteDocsDir = null
-
-if (hasProperty('remoteSiteDir')) {
-    remoteDocsDir="$remoteSiteDir/docs/1.0.x"
-}
-
-configurations {
-    scpAntTask
-}
-
-dependencies {
-    scpAntTask("org.apache.ant:ant-jsch:1.8.1")
-}
-
-task uploadApidocs(type: TarUpload) {
-    description = "upload api javadocs to http://${sshHost}/${project.name}/docs/${project.version.wildcardValue}/apidocs"
-    dependsOn apidocs
-    classifier = 'apidocs'
-    remoteDir = remoteDocsDir
-    login = docSiteLogin
-    classpath = configurations.scpAntTask
-
-    into('apidocs') {
-        from apidocs.destinationDir
-    }
-}
-
-task uploadDoc(type: TarUpload) {
-    dependsOn ':docs:reference:doc'
-    classifier = 'doc'
-    remoteDir = remoteDocsDir
-    login = docSiteLogin
-    classpath = configurations.scpAntTask
-
-    into('reference') {
-        from docsDir
-    }
-}
 
 task checkSnapshotDeps {
     description = 'Checks for snapshot dependencies and aborts the build if found.'
@@ -191,11 +112,11 @@ task checkSnapshotDeps {
     }
 }
 
-task release(dependsOn: [uploadArchives, uploadApidocs, uploadDoc, uploadDist]) {
+task release(dependsOn: ['uploadArchives', /*'uploadDoc',*/ 'uploadDist']) {
     description = 'Releases the project including all artifact uploads.'
 }
 
 if (project.version.releaseType == ReleaseType.MILESTONE ||
     project.version.releaseType == ReleaseType.RELEASE) {
-    release.dependsOn(checkSnapshotDeps)
+    release.dependsOn checkSnapshotDeps
 }

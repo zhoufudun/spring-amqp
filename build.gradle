@@ -28,9 +28,8 @@ import org.springframework.build.Version.ReleaseType
 import static org.springframework.build.RabbitUtils.rabbitServerIsRunning
 
 
-// add basic tasks like 'clean' and 'assemble'. allows for running
-// `gradle clean` from the root project and deleting the build directory,
-// for example
+// add basic tasks like 'clean' and 'assemble'. e.g.: allows for running
+// `gradle clean` from the root project and deleting the build directory
 apply plugin: 'base'
 
 

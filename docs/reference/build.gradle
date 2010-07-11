@@ -24,6 +24,9 @@
 // see: http://github.com/gradle/gradle-jdocbook
 // -----------------------------------------------------------------------------
 
+import org.springframework.build.gradle.tasks.Login;
+import org.springframework.build.gradle.tasks.TarUpload;
+
 apply plugin: 'base'
 apply plugin: 'docbook'
 
@@ -40,12 +43,11 @@ docbookPdf.stylesheet = new File(projectDir, 'src/xsl/pdf-custom.xsl')
 def imagesDir = new File(projectDir, 'src/docbook/images');
 docbookPdf.admonGraphicsPath = "${imagesDir}/"
 
-
 /**
  * Generate reference documentation from docbook sources.
  */
 task doc (dependsOn: [docbookHtml, docbookHtmlSingle, docbookPdf]) {
-    description = 'Generates reference documentation.'
+    description = 'Generates reference documentation in html, html-single and PDF formats.'
 
     // expand ${...} variables within docbook sources. this is a workaround
     // accomodating the fact that the current docbook plugin has no way of
@@ -60,10 +62,11 @@ task doc (dependsOn: [docbookHtml, docbookHtmlSingle, docbookPdf]) {
     // feature in Gradle, and is on the roadmap.
     //
     // see http://jira.codehaus.org/browse/GRADLE-1026 for more info.
-    //
-    description = 'Expands ${...} variables within docbook sources.'
+
     docbookSrcDir = new File(projectDir, 'src/docbook')
     docbookBuildDir = new File(projectDir, 'build/docbook')
+    docsDir = new File(buildDir, 'docs')
+    resourcesDir = new File(projectDir, 'src/resources')
 
     // copy all non-xml sources
     copy {
@@ -78,13 +81,47 @@ task doc (dependsOn: [docbookHtml, docbookHtmlSingle, docbookPdf]) {
         expand(version: "$version")
     }
 
+    onlyIf {
+        dependsOnTaskDidWork()
+    }
     doLast {
-        docsDir = new File(buildDir, 'docs')
-        resourcesDir = new File(projectDir, 'src/resources')
-
         ant {
             copy(toDir: docsDir) { fileset(dir: resourcesDir) }
             copy(toDir: new File(docsDir, 'images')) { fileset(dir: imagesDir) }
         }
     }
 }
+
+/*
+// TODO: get rid of
+task docSiteLogin(type: Login) {
+    if (project.hasProperty('sshHost')) {
+        host = project.property('sshHost')
+    }
+}
+
+// Define remoteSiteDir and sshHost in gradle.properties
+def remoteDocsDir = null
+
+if (hasProperty('remoteSiteDir')) {
+    remoteDocsDir="$remoteSiteDir/docs/1.0.x"
+}
+
+configurations { scpAntTask }
+dependencies {
+    scpAntTask("org.apache.ant:ant-jsch:1.8.1")
+}
+
+task uploadDoc(type: TarUpload, dependsOn: doc) {
+    description = "upload reference HTML and PDF docs to http://${sshHost}/${project.name}/docs/${project.version.wildcardValue}/reference"
+    classifier = 'doc'
+    remoteDir = remoteDocsDir
+    login = docSiteLogin
+    classpath = configurations.scpAntTask
+
+    into('reference') {
+        from doc.docsDir
+    }
+}
+*/
+
