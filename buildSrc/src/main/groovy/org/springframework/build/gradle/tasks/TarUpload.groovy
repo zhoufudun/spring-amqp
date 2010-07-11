@@ -44,6 +44,7 @@ class TarUpload extends Tar {
             sshexec(host: host, username: username, password: password, command: "mkdir -p $remoteDir")
 
             // copy the archive, unpack it, then delete it
+            println "scp $username@$host:$remoteDir"
             scp(file: archivePath, todir: "$username@$host:$remoteDir", password: password)
             sshexec(host: host, username: username, password: password, command: "cd $remoteDir && tar -xjf $archiveName")
             sshexec(host: host, username: username, password: password, command: "rm $remoteDir/$archiveName")

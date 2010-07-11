@@ -100,7 +100,6 @@ task build (dependsOn: [docbookHtml, docbookHtmlSingle, docbookPdf]) {
     }
 }
 
-/*
 // TODO: get rid of
 task docSiteLogin(type: Login) {
     if (project.hasProperty('sshHost')) {
@@ -120,16 +119,21 @@ dependencies {
     scpAntTask("org.apache.ant:ant-jsch:1.8.1")
 }
 
-task uploadDoc(type: TarUpload, dependsOn: doc) {
-    description = "upload reference HTML and PDF docs to http://${sshHost}/${project.name}/docs/${project.version.wildcardValue}/reference"
-    classifier = 'doc'
+/**
+ * Upload HTML and PDF reference documentation via SSH (scp).
+ *
+ * @author cbeams
+ * @author ltaylor
+ */
+task upload(type: TarUpload, dependsOn: build) {
+    def docUrl = "http://${sshHost}/${project.name}/docs/${project.version.wildcardValue}/reference"
+    description = "Uploads HTML and PDF reference documentation to ${docUrl}"
+    classifier = 'reference'
     remoteDir = remoteDocsDir
     login = docSiteLogin
     classpath = configurations.scpAntTask
 
     into('reference') {
-        from doc.docsDir
+        from build.docsDir
     }
 }
-*/
-

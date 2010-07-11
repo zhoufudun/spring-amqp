@@ -71,7 +71,6 @@ task build(type: Javadoc) {
     }
 }
 
-/*
 // TODO: get rid of
 task docSiteLogin(type: Login) {
     if (project.hasProperty('sshHost')) {
@@ -91,15 +90,21 @@ dependencies {
     scpAntTask("org.apache.ant:ant-jsch:1.8.1")
 }
 
-task uploadDoc(type: TarUpload, dependsOn: doc) {
-    description = "upload api javadocs to http://${sshHost}/${project.name}/docs/${project.version.wildcardValue}/apidocs"
-    classifier = 'apidocs'
+/**
+ * Upload API documentation via SSH (scp).
+ *
+ * @author cbeams
+ * @author ltaylor
+ */
+task upload(type: TarUpload, dependsOn: build) {
+    def docUrl = "http://${sshHost}/${project.name}/docs/${project.version.wildcardValue}/api"
+    description = "Uploads API documentation to ${docUrl}"
+    classifier = 'api'
     remoteDir = remoteDocsDir
     login = docSiteLogin
     classpath = configurations.scpAntTask
 
-    into('apidocs') {
-        from doc.destinationDir
+    into('api') {
+        from build.destinationDir
     }
 }
-*/
