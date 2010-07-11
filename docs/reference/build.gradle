@@ -31,11 +31,47 @@ apply plugin: 'base'
 apply plugin: 'docbook'
 
 
+/**
+ * Expand ${...} variables within docbook sources. This is a workaround
+ * accomodating the fact that the current docbook plugin has no way of
+ * parameterizing and replacing normal XML entities.
+ *
+ * Note that this task represents an implementation detail and it is
+ * unfortunate that it pollutes the listing of available tasks, e.g.
+ * during `gradle -t`. It's a good example of the need for 'task visibility' -
+ * a feature not yet implemented, but on the Gradle roadmap.
+ *
+ * @see http://jira.codehaus.org/browse/GRADLE-1026 for more info.
+ */
+task preprocessDocbookSources {
+    description = 'Expands ${...} variables within docbook sources.'
+
+    doLast {
+        docbookSrcDir = new File(projectDir, 'src/docbook')
+        docbookBuildDir = new File(projectDir, 'build/docbook')
+
+        // copy all non-xml sources
+        copy {
+            into(docbookBuildDir)
+            from(docbookSrcDir) { exclude '**/*.xml' }
+        }
+        // copy all xml sources, and expand ${...} variables along the way
+        // e.g.: ${version} needs to be replaced in the first page of the
+        copy {
+            into(docbookBuildDir)
+            from(docbookSrcDir) { include '**/*.xml' }
+            expand(version: "$version")
+        }
+    }
+}
+
+
 // -----------------------------------------------------------------------------
 // Configure the three docbook* tasks that are added to the project by the
 // 'docbook' plugin.
 // -----------------------------------------------------------------------------
 [docbookHtml, docbookPdf, docbookHtmlSingle]*.sourceFileName = 'index.xml';
+[docbookHtml, docbookHtmlSingle, docbookPdf]*.dependsOn preprocessDocbookSources
 
 docbookHtml.stylesheet = new File(projectDir, 'src/xsl/html-custom.xsl')
 docbookHtmlSingle.stylesheet = new File(projectDir, 'src/xsl/html-single-custom.xsl')
@@ -43,47 +79,16 @@ docbookPdf.stylesheet = new File(projectDir, 'src/xsl/pdf-custom.xsl')
 def imagesDir = new File(projectDir, 'src/docbook/images');
 docbookPdf.admonGraphicsPath = "${imagesDir}/"
 
+
 /**
  * Build HTML and PDF reference documentation from docbook sources.
  */
 task build (dependsOn: [docbookHtml, docbookHtmlSingle, docbookPdf]) {
     description = 'Builds reference documentation in html, html-single and PDF formats.'
 
-    // expand ${...} variables within docbook sources. this is a workaround
-    // accomodating the fact that the current docbook plugin has no way of
-    // parameterizing and replacing normal XML entities.
-    //
-    // note that this work is done at configuration time (as opposed to
-    // execution time in the doLast block below) to ensure that the copying
-    // and filtering happens prior to any of the three actual docbook tasks
-    // executing. this could be modeled as a task dependency, but the task
-    // would be an implementation detail and would pollute the available set
-    // of tasks. 'task visibility', including 'private tasks' is a desirable
-    // feature in Gradle, and is on the roadmap.
-    //
-    // see http://jira.codehaus.org/browse/GRADLE-1026 for more info.
-
-    docbookSrcDir = new File(projectDir, 'src/docbook')
-    docbookBuildDir = new File(projectDir, 'build/docbook')
     docsDir = new File(buildDir, 'docs')
     resourcesDir = new File(projectDir, 'src/resources')
 
-    // copy all non-xml sources
-    copy {
-        into(docbookBuildDir)
-        from(docbookSrcDir) { exclude '**/*.xml' }
-    }
-    // copy all xml sources, and expand ${...} variables along the way
-    // e.g.: ${version} needs to be replaced in the first page of the
-    copy {
-        into(docbookBuildDir)
-        from(docbookSrcDir) { include '**/*.xml' }
-        expand(version: "$version")
-    }
-
-    onlyIf {
-        dependsOnTaskDidWork()
-    }
     doLast {
         ant {
             copy(toDir: docsDir) { fileset(dir: resourcesDir) }
