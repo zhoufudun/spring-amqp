@@ -71,13 +71,6 @@ task build(type: Javadoc) {
     }
 }
 
-// TODO: get rid of
-task docSiteLogin(type: Login) {
-    if (project.hasProperty('sshHost')) {
-        host = project.property('sshHost')
-    }
-}
-
 // Define remoteSiteDir and sshHost in gradle.properties
 def remoteDocsDir = null
 
@@ -101,7 +94,6 @@ task upload(type: TarUpload, dependsOn: build) {
     description = "Uploads API documentation to ${docUrl}"
     classifier = 'api'
     remoteDir = remoteDocsDir
-    login = docSiteLogin
     classpath = configurations.scpAntTask
 
     into('api') {

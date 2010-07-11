@@ -32,8 +32,6 @@ class TarUpload extends Tar {
     @Input
     String remoteDir
 
-    Login login
-
     @InputFiles
     def classpath
 
@@ -48,9 +46,9 @@ class TarUpload extends Tar {
     }
 
     def upload() {
-        String username = login.username
-        String password = login.password
-        String host = login.host
+        String username = 'cbeams'
+        String keyfile = '/Users/cbeams/.ssh/id_rsa'
+        String host = 'static.springsource.org'
 
         project.ant {
             // TODO: get progress metrics by hooking in a listener via Jsch, or ivy resolver, etc.
@@ -60,13 +58,12 @@ class TarUpload extends Tar {
                 classname: 'org.apache.tools.ant.taskdefs.optional.ssh.SSHExec', classpath: classpath.asPath)
 
             // make the remote dir if it doesn't exist yet
-            sshexec(host: host, username: username, password: password, command: "mkdir -p $remoteDir")
+            sshexec(host: host, username: username, keyfile: keyfile, command: "mkdir -p $remoteDir")
 
             // copy the archive, unpack it, then delete it
-            println "scp $username@$host:$remoteDir"
-            scp(file: archivePath, todir: "$username@$host:$remoteDir", password: password)
-            sshexec(host: host, username: username, password: password, command: "cd $remoteDir && tar -xjf $archiveName")
-            sshexec(host: host, username: username, password: password, command: "rm $remoteDir/$archiveName")
+            scp(file: archivePath, todir: "$username@$host:$remoteDir", keyfile: keyfile)
+            sshexec(host: host, username: username, keyfile: keyfile, command: "cd $remoteDir && tar -xjf $archiveName")
+            sshexec(host: host, username: username, keyfile: keyfile, command: "rm $remoteDir/$archiveName")
         }
     }
 
