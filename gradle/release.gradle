@@ -100,9 +100,11 @@ task dist(type: Zip) {
 
 /**
  * Upload the distribution zip file.
- * @see UploadDist
+ *
+ * @see org.springframework.build.gradle.tasks.UploadDist
  */
 task uploadDist(dependsOn: dist, type: UploadDist) {
+    description = 'Uploads the distribution zip file.'
     archiveFile = dist.archivePath
     shaFile = dist.checksumPath as File
     archiveName = dist.archiveName

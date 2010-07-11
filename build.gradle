@@ -157,7 +157,7 @@ configure(coreprojects) {
 // see: individual project(*) configurations below
 // -----------------------------------------------------------------------------
 configure(sampleprojects) {
-    apply from: "$rootDir/gradle/pom-generation.gradle"
+    apply from: "${sampleparent.projectDir}/pom-generation.gradle"
 
     // samples group will translate to their maven groupId
     group = 'org.springframework.amqp.samples'

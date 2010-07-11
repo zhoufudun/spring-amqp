@@ -15,29 +15,57 @@
  */
 
 
+// -----------------------------------------------------------------------------
+// Spring AMQP sample projects should be able to be built with Maven
+// out-of-the-box as a core use case for end users consuming the distribution.
+// This is for two reasons: (1) we shouldn't force gradle on them to run our
+// samples; (2) part of the point of the sample is to demonstrate using Spring
+// AMQP within a Maven build.
+//
+// The generatePom task below uses dependency metadata declared for each
+// sample project in the root build.gradle file to generate a pom.xml in the
+// root directory of the sample project.  Additional entries in the pom that
+// cannot be determined from gradle metadata are customized using gradle's
+// pom builder api.
+//
+// This approach means the best of both worlds: Spring AMQP developers can
+// manage sample projects with gradle, no different than any other java project
+// in the build, but end users can operate sample builds via Maven if they wish.
+//
+// Note that this file has been placed in this directory as a simple matter
+// of code organization. The maven pom builder logic in the generatePom task
+// is too long to have reasonably been included in $rootDir/build.gradle.
+//
+// see: $rootDir/build.gradle and search for configure(sampleprojects) to see
+//      where this script is applied to each sample project.
+// -----------------------------------------------------------------------------
+
+
 /**
  * Generate a Maven pom.xml for a sample project.  Dependency information will
  * be based on Gradle metadata for the project, and other customizations such
  * as licensing information and source compatibility settings are configured
  * within.
+ *
+ * @author cbeams
  */
 task generatePom {
-    description = 'Generates Maven POM file for an Spring AMQP sample project'
+    description = 'Generates Maven POM file for a Spring AMQP sample project'
 
     generatedPomFileName = "pom.xml"
 
-    // participate in incremental build: do not execute if no change in classpath
-    //inputs.files(configurations.runtime) // includes configurations.compile
-
-    // enable partial cleaning with `gradle cleanWritePom`
-    // and incremental build - if it's been removed by someone it'll be regenerated
+    // enable partial cleaning with `gradle cleanGeneratePom`
     outputs.files(generatedPomFileName)
 
+    // initialize properties - these will be assigned by each sample project.
+    // see: $rootDir/build.gradle; search for
+    //      project(':spring-amqp-samples:stocks') to see where it happens.
     artifactId = null
     artifactName = null
     artifactDescription = null
 
     doLast() {
+        // customize the pom creation process
         p = pom {
             project {
                 artifactId = artifactId
@@ -74,9 +102,19 @@ task generatePom {
                 }
             }
         }
+
+        // customizing the artifact id is a special case that must be configured
+        // after the pom is fully configured, otherwise it'll be overwritten
         p.whenConfigured { pom -> pom.artifactId = artifactId }
+
+        // write the pom.xml file out to the filesystem
         p.writeTo(generatedPomFileName)
     }
 
+    // ensure that pom generation happens every time resources are processed
+    // (which practically means any time a build happens). if the dependencies
+    // for the project have been updated (in $rootDir/build.gradle), the pom
+    // will have diffs in it and the developer will be reminded to check in
+    // the change during the next commit cycle.
     processResources.dependsOn generatePom
 }
