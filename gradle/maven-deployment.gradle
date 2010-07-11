@@ -16,9 +16,10 @@
 
 import org.springframework.build.Version.ReleaseType;
 
+
 // check that upload-related properties are defined and fail early if not
 // these properties ('s3AccessKey', etc) should be defined in
-// 'gradle.properties' in the project root
+// 'gradle.properties' in $HOME/.gradle/gradle.properties
 gradle.taskGraph.whenReady {graph ->
     if (graph.hasTask(project.path + ':uploadArchives')) {
         if (version.releaseType == ReleaseType.RELEASE) {
@@ -30,16 +31,12 @@ gradle.taskGraph.whenReady {graph ->
     }
 }
 
-// add a configuration with a classpath that includes our s3 maven deployer
-configurations { deployerJars }
-dependencies {
-    deployerJars "org.springframework.build.aws:org.springframework.build.aws.maven:3.0.0.RELEASE"
-}
 
 /**
- * Task that creates a source jar artifact for all main java sources.
+ * Builds a source jar artifact for all main java sources.
  */
 task sourceJar(type: Jar) {
+    description = 'Builds a source jar artifact suitable for maven deployment.'
     classifier = 'sources'
     from sourceSets.main.java
 }
@@ -75,11 +72,17 @@ artifacts {
  * @see http://maven.apache.org/guides/mini/guide-central-repository-upload.html
  */
 uploadArchives {
-    description = "Deploy archives artifacts to " // url appended below
+    description = "Does a maven deploy of archives artifacts to " // url appended below
 
     def releaseRepositoryUrl = "file://${mavenSyncRepoDir}"
     def milestoneRepositoryUrl = 's3://maven.springframework.org/milestone'
     def snapshotRepositoryUrl = 's3://maven.springframework.org/snapshot'
+
+    // add a configuration with a classpath that includes our s3 maven deployer
+    configurations { deployerJars }
+    dependencies {
+        deployerJars "org.springframework.build.aws:org.springframework.build.aws.maven:3.0.0.RELEASE"
+    }
 
     repositories.mavenDeployer {
         switch (version.releaseType) {

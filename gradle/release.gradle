@@ -47,12 +47,12 @@ task dist(type: Zip) {
                  ':docs:api:build', ':docs:reference:build',
                  ':docs:reference:assemble']
 
-    description = 'Builds the project distribution zip file.'
-
     destinationDir = buildDir
     archiveName = "${project.name}-${project.version}.zip"
     checksumPath = "${destinationDir}/${archiveName}.sha1"
     def zipRootDir = "${project.name}-${project.version}"
+
+    description = "Builds the distribution zip file at ${destinationDir}/${archiveName}"
 
     // set up outputs for use by incremental build and by tasks like 'cleanDist'
     // the archive zip file will be added automatically to outputs.files

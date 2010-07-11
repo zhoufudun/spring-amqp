@@ -14,7 +14,16 @@
  * limitations under the License.
  */
 
+
+/**
+ * Generate a Maven pom.xml for a sample project.  Dependency information will
+ * be based on Gradle metadata for the project, and other customizations such
+ * as licensing information and source compatibility settings are configured
+ * within.
+ */
 task generatePom {
+    description = 'Generates Maven POM file for an Spring AMQP sample project'
+
     generatedPomFileName = "pom.xml"
 
     // participate in incremental build: do not execute if no change in classpath

@@ -14,12 +14,18 @@
  * limitations under the License.
  */
 
-// `gradle wrapper` will generate gradlew and friends
-// to allow for self-bootstrapping of gradle
+
+/**
+ * Generate gradlew and gradlew.bat scripts and associated files.  These
+ * convenience scripts allow users to operate the build without being forced to
+ * download and install gradle.
+ *
+ * @see http://gradle.org/0.9-preview-3/docs/userguide/userguide_single.html#gradle_wrapper
+ */
 task wrapper(type: Wrapper) {
+    description = "Generates gradlew and gradlew.bat bootstrap scripts"
     gradleVersion = '0.9-preview-3'
     // place jar file and properties into a
     // subdirectory to avoid root dir clutter
     jarPath = 'gradle/wrapper'
 }
-
