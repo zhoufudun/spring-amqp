@@ -44,10 +44,10 @@ def imagesDir = new File(projectDir, 'src/docbook/images');
 docbookPdf.admonGraphicsPath = "${imagesDir}/"
 
 /**
- * Generate reference documentation from docbook sources.
+ * Build HTML and PDF reference documentation from docbook sources.
  */
-task doc (dependsOn: [docbookHtml, docbookHtmlSingle, docbookPdf]) {
-    description = 'Generates reference documentation in html, html-single and PDF formats.'
+task build (dependsOn: [docbookHtml, docbookHtmlSingle, docbookPdf]) {
+    description = 'Builds reference documentation in html, html-single and PDF formats.'
 
     // expand ${...} variables within docbook sources. this is a workaround
     // accomodating the fact that the current docbook plugin has no way of

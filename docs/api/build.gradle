@@ -24,13 +24,14 @@ import org.springframework.build.gradle.tasks.TarUpload;
 apply plugin: 'base'
 
 /**
- * Generate JavaDoc HTML for all core project classes.  Result is suitable for
- * packaging into a distribution zip or viewing directly with a browser.
+ * Build aggregated JavaDoc HTML for all core project classes.  Result is
+ * suitable for packaging into a distribution zip or viewing directly with
+ * a browser.
  *
  * @see http://gradle.org/0.9-preview-3/docs/javadoc/org/gradle/api/tasks/javadoc/Javadoc.html
  */
-task doc(type: Javadoc) {
-    description = "Generates aggregated JavaDoc HTML for all core project classes."
+task build(type: Javadoc) {
+    description = "Builds aggregated JavaDoc HTML for all core project classes."
 
     // this task is a bit ugly to configure. it was a user contribution, and
     // Hans tells me it's on the roadmap to redesign it.
@@ -48,9 +49,13 @@ task doc(type: Javadoc) {
         project.sourceSets.main.allJava
     }
 
-    // collect all main classpaths to be able to resolve @see refs, etc
+    // collect all main classpaths to be able to resolve @see refs, etc.
+    // this collection also determines the set of projects that this
+    // task dependsOn, thus the runtimeClasspath is used to ensure all
+    // projects are included, not just *dependencies* of all classes.
+    // this is awkward and took me a while to figure out.
     classpath = files(coreprojects.collect {project ->
-        project.sourceSets.main.compileClasspath
+        project.sourceSets.main.runtimeClasspath
     })
 
     // copy the images from the doc-files dir over to the target

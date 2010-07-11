@@ -44,7 +44,7 @@ task release(dependsOn: ['uploadArchives', /*'uploadDoc',*/ 'uploadDist']) {
 task dist(type: Zip) {
     dependsOn = [':spring-amqp-core:build', ':spring-rabbit:build',
                  ':spring-rabbit-admin:build', ':spring-otp:build',
-                 ':docs:api:doc', ':docs:reference:doc',
+                 ':docs:api:build', ':docs:reference:build',
                  ':docs:reference:assemble']
 
     description = 'Builds the project distribution zip file.'
@@ -67,13 +67,13 @@ task dist(type: Zip) {
         from("$rootDir/docs/txt") {
             include '*.txt' // e.g.: license.txt
         }
-        // add the product of `gradle :docs:api:doc` to the dist zip
+        // add the product of `gradle :docs:api:build` to the dist zip
         into('docs/javadoc') {
-            from tasks.getByPath(':docs:api:doc').destinationDir
+            from tasks.getByPath(':docs:api:build').destinationDir
         }
-        // add the product of `gradle :docs:reference:doc` to the dist zip
+        // add the product of `gradle :docs:reference:build` to the dist zip
         into('docs/reference') {
-            from tasks.getByPath(':docs:reference:doc').docsDir
+            from tasks.getByPath(':docs:reference:build').docsDir
         }
         // add everything in the spring-amqp-samples directory
         into('samples') {
