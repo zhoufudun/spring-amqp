@@ -21,15 +21,15 @@
 //
 // - the following imports are from groovy and/or java classes in buildSrc/
 //   or from jars on 'buildscript' classpath (in our case, it's all buildSrc)
-//   sources in buildSrc are compiled and available on the classpath automatically
+//   sources in buildSrc are compiled and placed on the classpath automatically
 // -----------------------------------------------------------------------------
 import org.springframework.build.Version
 import org.springframework.build.Version.ReleaseType
 import static org.springframework.build.RabbitUtils.rabbitServerIsRunning
 
 
-// add basic tasks like 'clean' and 'assemble'. e.g.: allows for running
-// `gradle clean` from the root project and deleting the build directory
+// add basic tasks like 'clean' and 'assemble' to the root project. e.g.: allows
+// running `gradle clean` from the root project and deleting the build directory
 apply plugin: 'base'
 
 
@@ -89,6 +89,18 @@ javaprojects = subprojects.findAll { project ->
 coreprojects = javaprojects - sampleprojects
 
 
+// configure the build classpath for resolving the gradle idea plugin.
+// this plugin will be built-in in the next gradle release, allowing
+// declaration with a simple "apply plugin: 'idea'"
+// see: configure(javaprojects) { apply plugin: 'org.gradle.idea' } below
+// see: http://jira.codehaus.org/browse/GRADLE-1025
+buildscript {
+    repositories {
+        mavenRepo urls: 'http://gradle.artifactoryonline.com/gradle/plugins'
+    }
+    dependencies { classpath "org.gradle.plugins:gradle-idea-plugin:0.2" }
+}
+
 // -----------------------------------------------------------------------------
 // Configuration for all java subprojects
 // -----------------------------------------------------------------------------
@@ -96,6 +108,7 @@ configure(javaprojects) {
     apply plugin: 'java' // tasks for conventional java lifecycle
     apply plugin: 'maven' // `gradle install` to push jars to local .m2 cache
     apply plugin: 'eclipse' // `gradle eclipse` to generate .classpath/.project
+    apply plugin: 'org.gradle.idea' // `gradle idea` to generate .ipr/.iml
 
     springVersion = '3.0.3.RELEASE'
     rabbitVersion = '1.8.0'
