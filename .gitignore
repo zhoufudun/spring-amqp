@@ -1,5 +1,4 @@
 target
-gradle.properties
 build
 .gradle
 .classpath.old

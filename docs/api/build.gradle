@@ -89,7 +89,8 @@ dependencies {
  * @author ltaylor
  */
 task upload(type: Tar, dependsOn: build) {
-    def docUrl = "http://${sshHost}/${project.name}/docs/${project.version.wildcardValue}/api"
+    def rootProjectName = project.property('rootProjectName')
+    def docUrl = "http://${sshHost}/${rootProjectName}/docs/${project.version.wildcardValue}/api"
     description = "Uploads API documentation to ${docUrl}"
     classifier = 'api'
     remoteDir = remoteDocsDir
@@ -100,9 +101,9 @@ task upload(type: Tar, dependsOn: build) {
     }
 
     doLast() {
-        String username = 'cbeams'
-        String keyfile = '/Users/cbeams/.ssh/id_rsa'
-        String host = 'static.springsource.org'
+        String username = project.property('sshUsername')
+        String keyfile = project.property('sshPrivateKey')
+        String host = project.property('sshHost')
 
         project.ant {
 
