@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+import org.springframework.build.gradle.tasks.Login;
+import org.springframework.build.gradle.tasks.TarUpload;
+
 // -----------------------------------------------------------------------------
 // Reference documentation gradle build file.
 //
@@ -21,15 +24,12 @@
 // well. However, there is an 'offical' gradle docbook plugin effort underway
 // and effort should be taken to refactor to using it
 //
-// see: http://github.com/gradle/gradle-jdocbook
+// @author cbeams
+// @see http://github.com/gradle/gradle-jdocbook
 // -----------------------------------------------------------------------------
-
-import org.springframework.build.gradle.tasks.Login;
-import org.springframework.build.gradle.tasks.TarUpload;
 
 apply plugin: 'base'
 apply plugin: 'docbook'
-
 
 /**
  * Expand ${...} variables within docbook sources. This is a workaround
@@ -41,6 +41,7 @@ apply plugin: 'docbook'
  * during `gradle -t`. It's a good example of the need for 'task visibility' -
  * a feature not yet implemented, but on the Gradle roadmap.
  *
+ * @author cbeams
  * @see http://jira.codehaus.org/browse/GRADLE-1026 for more info.
  */
 task preprocessDocbookSources {
@@ -82,6 +83,8 @@ docbookPdf.admonGraphicsPath = "${imagesDir}/"
 
 /**
  * Build HTML and PDF reference documentation from docbook sources.
+ *
+ * @author cbeams
  */
 task build (dependsOn: [docbookHtml, docbookHtmlSingle, docbookPdf]) {
     description = 'Builds reference documentation in html, html-single and PDF formats.'

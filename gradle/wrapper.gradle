@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-
 /**
  * Generate gradlew and gradlew.bat scripts and associated files.  These
  * convenience scripts allow users to operate the build without being forced to
  * download and install gradle.
  *
+ * @author cbeams
  * @see http://gradle.org/0.9-preview-3/docs/userguide/userguide_single.html#gradle_wrapper
  */
 task wrapper(type: Wrapper) {

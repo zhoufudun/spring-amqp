@@ -14,27 +14,20 @@
  * limitations under the License.
  */
 
-
 // -----------------------------------------------------------------------------
-// Task definitions and configuration relating to the
-// SpringSource 'bundlor' OSGi manifest generation utility
+// Task definitions and configuration relating to the SpringSource 'bundlor'
+// OSGi manifest generation utility.
 //
+// @author cbeams
 // see: http://www.springsource.org/bundlor
 // -----------------------------------------------------------------------------
 
-
-// configuration that will be used when creating the ant taskdef classpath
-configurations { bundlor }
-dependencies {
-    bundlor 'com.springsource.bundlor:com.springsource.bundlor.ant:1.0.0.RELEASE',
-            'com.springsource.bundlor:com.springsource.bundlor:1.0.0.RELEASE',
-            'com.springsource.bundlor:com.springsource.bundlor.blint:1.0.0.RELEASE'
-}
-
 /**
- * Generates an OSGi manifest using the ant bundlor task.
+ * Generate an OSGi manifest using the ant bundlor task.
  *
- * see: http://static.springsource.org/s2-bundlor/1.0.x/user-guide/html/ch04s02.html
+ * @author ltaylor
+ * @author cbeams
+ * @see http://static.springsource.org/s2-bundlor/1.0.x/user-guide/html/ch04s02.html
  */
 task bundlor(dependsOn: compileJava) {
     description = 'Generates an OSGi-compatibile MANIFEST.MF file.'
@@ -63,9 +56,17 @@ task bundlor(dependsOn: compileJava) {
     // incremental build
     jar.inputs.files manifest
 
+    // configuration that will be used when creating the ant taskdef classpath
+    configurations { bundlorconf }
+    dependencies {
+        bundlorconf 'com.springsource.bundlor:com.springsource.bundlor.ant:1.0.0.RELEASE',
+                'com.springsource.bundlor:com.springsource.bundlor:1.0.0.RELEASE',
+                'com.springsource.bundlor:com.springsource.bundlor.blint:1.0.0.RELEASE'
+    }
+
     doFirst {
         ant.taskdef(resource: 'com/springsource/bundlor/ant/antlib.xml',
-                    classpath: configurations.bundlor.asPath)
+                    classpath: configurations.bundlorconf.asPath)
 
         // the bundlor ant task writes directly to standard out
         // redirect it to INFO level logging, which gradle will

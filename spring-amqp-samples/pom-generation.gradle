@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 // -----------------------------------------------------------------------------
 // Spring AMQP sample projects should be able to be built with Maven
 // out-of-the-box as a core use case for end users consuming the distribution.
@@ -36,10 +35,10 @@
 // of code organization. The maven pom builder logic in the generatePom task
 // is too long to have reasonably been included in $rootDir/build.gradle.
 //
-// see: $rootDir/build.gradle and search for configure(sampleprojects) to see
+// @author cbeams
+// @see $rootDir/build.gradle and search for configure(sampleprojects) to see
 //      where this script is applied to each sample project.
 // -----------------------------------------------------------------------------
-
 
 /**
  * Generate a Maven pom.xml for a sample project.  Dependency information will
@@ -48,6 +47,7 @@
  * within.
  *
  * @author cbeams
+ * @see http://gradle.org/0.9-preview-3/docs/userguide/userguide_single.html#pomBuilder
  */
 task generatePom {
     description = 'Generates Maven POM file for a Spring AMQP sample project'

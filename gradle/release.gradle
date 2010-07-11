@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-// -----------------------------------------------------------------------------
-// task definitions related to releasing the project
-// -----------------------------------------------------------------------------
-
 import org.springframework.build.gradle.tasks.UploadDist;
 import org.springframework.build.Version.ReleaseType
 
+// -----------------------------------------------------------------------------
+// Task definitions related to releasing the project
+//
+// @author cbeams
+// -----------------------------------------------------------------------------
 
 // ensure that every project has been evaluated before this script
 // this allows us to look up tasks below and dereference dynamically
@@ -29,9 +30,10 @@ project.subprojects.each { project ->
     evaluationDependsOn project.path
 }
 
-
 /**
  * Convenience task that depends on all other upload-related tasks.
+ *
+ * @author cbeams
  */
 task release(dependsOn: ['uploadArchives', /*'uploadDoc',*/ 'uploadDist']) {
     description = 'Releases the project including all artifact uploads.'
@@ -40,6 +42,8 @@ task release(dependsOn: ['uploadArchives', /*'uploadDoc',*/ 'uploadDist']) {
 
 /**
  * Build the distribution zip file.
+ *
+ * @author cbeams
  */
 task dist(type: Zip) {
     dependsOn = [':spring-amqp-core:build', ':spring-rabbit:build',
@@ -101,6 +105,7 @@ task dist(type: Zip) {
 /**
  * Upload the distribution zip file.
  *
+ * @author cbeams
  * @see org.springframework.build.gradle.tasks.UploadDist
  */
 task uploadDist(dependsOn: dist, type: UploadDist) {
@@ -120,7 +125,14 @@ task uploadDist(dependsOn: dist, type: UploadDist) {
 
 
 /**
- * Check all java projects for dependencies having a SNAPSHOT version.
+ * Check all java projects for dependencies having a SNAPSHOT version and abort
+ * the build if found.  This task can be used standalone at any time, but is
+ * intended primarily for use during the project release workflow.  It is
+ * important that any non-snapshot build be checked for snapshot dependencies
+ * before final publication, as snapshot dependencies may change and thus make
+ * the build unstable and/or unreproducable.
+ *
+ * @author cbeams
  */
 task checkSnapshotDeps {
     description = 'Checks for snapshot dependencies and aborts the build if found.'

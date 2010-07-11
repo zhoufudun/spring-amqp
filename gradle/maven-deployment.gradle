@@ -16,6 +16,12 @@
 
 import org.springframework.build.Version.ReleaseType;
 
+// -----------------------------------------------------------------------------
+// Tasks related to deploying Maven artifacts.
+//
+// @author cbeams
+// -----------------------------------------------------------------------------
+
 
 // check that upload-related properties are defined and fail early if not
 // these properties ('s3AccessKey', etc) should be defined in
@@ -34,6 +40,8 @@ gradle.taskGraph.whenReady {graph ->
 
 /**
  * Builds a source jar artifact for all main java sources.
+ *
+ * @author ltaylor
  */
 task sourceJar(type: Jar) {
     description = 'Builds a source jar artifact suitable for maven deployment.'
@@ -66,6 +74,7 @@ artifacts {
  * that have the erlangLicense property set to true, the Erlang License will be
  * added to the pom as well.
  *
+ * @author cbeams
  * @see 'mavenSyncRepoDir' in gradle.properties
  * @see org.springframework.build.Version#getReleaseType
  * @see `gradle install` for deploying artifacts to the local .m2 cache

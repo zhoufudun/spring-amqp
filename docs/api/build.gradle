@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-// -----------------------------------------------------------------------------
-// API documentation gradle build file.
-// -----------------------------------------------------------------------------
-
 import org.springframework.build.gradle.tasks.Login;
 import org.springframework.build.gradle.tasks.TarUpload;
+
+// -----------------------------------------------------------------------------
+// API documentation gradle build file.
+//
+// @author cbeams
+// -----------------------------------------------------------------------------
 
 apply plugin: 'base'
 
@@ -28,6 +30,8 @@ apply plugin: 'base'
  * suitable for packaging into a distribution zip or viewing directly with
  * a browser.
  *
+ * @author cbeams
+ * @author ltaylor
  * @see http://gradle.org/0.9-preview-3/docs/javadoc/org/gradle/api/tasks/javadoc/Javadoc.html
  */
 task build(type: Javadoc) {

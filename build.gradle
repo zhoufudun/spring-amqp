@@ -14,18 +14,21 @@
  * limitations under the License.
  */
 
+import org.springframework.build.Version
+import org.springframework.build.Version.ReleaseType
+import static org.springframework.build.RabbitUtils.rabbitServerIsRunning
+
 // -----------------------------------------------------------------------------
 // Main gradle build file for Spring AMQP
 //
 // - run `./gradlew(.bat) build` to kick off a complete compile-and-test
 //
-// - the following imports are from groovy and/or java classes in buildSrc/
+// - the imports above are from groovy and/or java classes in buildSrc/
 //   or from jars on 'buildscript' classpath (in our case, it's all buildSrc)
 //   sources in buildSrc are compiled and placed on the classpath automatically
+//
+// @author cbeams
 // -----------------------------------------------------------------------------
-import org.springframework.build.Version
-import org.springframework.build.Version.ReleaseType
-import static org.springframework.build.RabbitUtils.rabbitServerIsRunning
 
 
 // add basic tasks like 'clean' and 'assemble' to the root project. e.g.: allows
@@ -36,7 +39,7 @@ apply plugin: 'base'
 // -----------------------------------------------------------------------------
 // Configuration for all projects including this one (the root project)
 //
-// see: settings.gradle for list of all subprojects
+// @see settings.gradle for list of all subprojects
 // -----------------------------------------------------------------------------
 allprojects {
     // group will translate to groupId during pom generation and deployment
@@ -64,7 +67,7 @@ allprojects {
 // Configuration for all subprojects
 // - empty for now, but shown for completeness
 //
-// see: settings.gradle for list of all subprojects
+// @see settings.gradle for list of all subprojects
 // -----------------------------------------------------------------------------
 subprojects { }
 
@@ -76,7 +79,7 @@ subprojects { }
 // - all non-sample java projects are considered 'core projects'
 // - documentation-related subprojects are not collected here (there's just one)
 //
-// see: configure(*) sections below
+// @see configure(*) sections below
 // -----------------------------------------------------------------------------
 sampleparent = project(':spring-amqp-samples')
 
@@ -92,8 +95,8 @@ coreprojects = javaprojects - sampleprojects
 // configure the build classpath for resolving the gradle idea plugin.
 // this plugin will be built-in in the next gradle release, allowing
 // declaration with a simple "apply plugin: 'idea'"
-// see: configure(javaprojects) { apply plugin: 'org.gradle.idea' } below
-// see: http://jira.codehaus.org/browse/GRADLE-1025
+// @see configure(javaprojects) { apply plugin: 'org.gradle.idea' } below
+// @see http://jira.codehaus.org/browse/GRADLE-1025
 buildscript {
     repositories {
         mavenRepo urls: 'http://gradle.artifactoryonline.com/gradle/plugins'
@@ -125,7 +128,7 @@ configure(javaprojects) {
 // -----------------------------------------------------------------------------
 // Configuration for all core (non-sample) java subprojects
 //
-// see: individual project(*) configurations below
+// @see individual project(*) configurations below
 // -----------------------------------------------------------------------------
 configure(coreprojects) {
     // certain projects will need erlang licensing in addition to Apache.
@@ -154,7 +157,7 @@ configure(coreprojects) {
 // -----------------------------------------------------------------------------
 // Configuration for all sample projects
 //
-// see: individual project(*) configurations below
+// @see individual project(*) configurations below
 // -----------------------------------------------------------------------------
 configure(sampleprojects) {
     apply from: "${sampleparent.projectDir}/pom-generation.gradle"
@@ -183,7 +186,7 @@ configure(sampleprojects) {
 // -----------------------------------------------------------------------------
 // Configuration for each individual core java subproject
 //
-// see: configure(javaprojects) above for general config
+// @see configure(javaprojects) above for general config
 // -----------------------------------------------------------------------------
 project('spring-amqp-core') {
     dependencies {
@@ -238,7 +241,7 @@ project('spring-rabbit-admin') {
 // -----------------------------------------------------------------------------
 // Configuration for each individual sample subproject
 //
-// see: configure(sampleprojects) above for general config
+// @see configure(sampleprojects) above for general config
 // -----------------------------------------------------------------------------
 project(':spring-amqp-samples:helloworld') {
     generatePom {
@@ -274,7 +277,7 @@ project(':spring-amqp-samples:stocks') {
 // Conditionally import tasks related to releasing and managing the project
 // depending on the role played by the current user.
 //
-// see: gradle.properties for more information on roles
+// @see gradle.properties for more information on roles
 // -----------------------------------------------------------------------------
 if (project.properties['role'] == 'buildmaster') {
     // add tasks for releasing the project such as 'dist', 'uploadDist', etc.
