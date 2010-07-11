@@ -16,7 +16,6 @@
 
 import org.springframework.build.Version
 import org.springframework.build.Version.ReleaseType
-import static org.springframework.build.RabbitUtils.rabbitServerIsRunning
 
 // -----------------------------------------------------------------------------
 // Main gradle build file for Spring AMQP
@@ -29,7 +28,6 @@ import static org.springframework.build.RabbitUtils.rabbitServerIsRunning
 //
 // @author cbeams
 // -----------------------------------------------------------------------------
-
 
 // add basic tasks like 'clean' and 'assemble' to the root project. e.g.: allows
 // running `gradle clean` from the root project and deleting the build directory
@@ -268,8 +266,23 @@ project(':spring-amqp-samples:stocks') {
         artifactDescription = 'Shows the usage of Spring Rabbit integration classes'
     }
 
-    // Client and Server @Test cases need a local rabbitmq-server running
-    test.onlyIf { rabbitServerIsRunning() || this.hasProperty('forceServerTests') }
+    // Client and Server @Test cases need a local rabbitmq-server running. Skip
+    // the test task if there isn't one up.
+    test.onlyIf {
+        if (project.hasProperty('forceServerTests'))
+            return true
+
+        def port = 5672
+        try {
+            new java.net.Socket("localhost", port)
+            return true
+        } catch (java.net.ConnectException ex) {
+            println "Tests will be skipped as rabbitmq-server is not running " +
+                    "on port ${port}. Start a local rabbitmq-server process " +
+                    "or run gradle with '-PforceServerTests'"
+            return false
+        }
+    }
 }
 
 
