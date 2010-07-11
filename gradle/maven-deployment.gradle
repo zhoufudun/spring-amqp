@@ -43,6 +43,7 @@ task sourceJar(type: Jar) {
     classifier = 'sources'
     from sourceSets.main.java
 }
+build.dependsOn sourceJar
 
 // Add the source jar archive to the set of artifacts for this project.
 // Note that the regular 'jar' archive is already added by default.

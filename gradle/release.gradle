@@ -22,70 +22,112 @@ import org.springframework.build.gradle.tasks.UploadDist;
 import org.springframework.build.Version.ReleaseType
 
 
-def samplesDir = new File(project.rootDir, 'spring-amqp-samples')
+// ensure that every project has been evaluated before this script
+// this allows us to look up tasks below and dereference dynamically
+// assigned properties
+project.subprojects.each { project ->
+    evaluationDependsOn project.path
+}
 
-// `gradle dist` will build the zip distribution
-task dist(type: Zip, dependsOn: [':docs:api:doc', ':docs:reference:doc', ':docs:reference:assemble']) {
-    description = 'TODO'
 
-    destinationDir = file("${buildDir}")
+/**
+ * Convenience task that depends on all other upload-related tasks.
+ */
+task release(dependsOn: ['uploadArchives', /*'uploadDoc',*/ 'uploadDist']) {
+    description = 'Releases the project including all artifact uploads.'
+}
+
+
+/**
+ * Build the distribution zip file.
+ */
+task dist(type: Zip) {
+    dependsOn = [':spring-amqp-core:build', ':spring-rabbit:build',
+                 ':spring-rabbit-admin:build', ':spring-otp:build',
+                 ':docs:api:doc', ':docs:reference:doc',
+                 ':docs:reference:assemble']
+
+    description = 'Builds the project distribution zip file.'
+
+    destinationDir = buildDir
     archiveName = "${project.name}-${project.version}.zip"
+    checksumPath = "${destinationDir}/${archiveName}.sha1"
     def zipRootDir = "${project.name}-${project.version}"
 
     // set up outputs for use by incremental build and by tasks like 'cleanDist'
     // the archive zip file will be added automatically to outputs.files
     // but we must add the sha1 checksum ourselves
-    outputs.files file("${destinationDir}/${archiveName}.sha1")
+    outputs.files file(checksumPath)
 
-    doLast {
-        into(zipRootDir) {
-            // include all changelog.txt, readme.txt, etc in the root dir
-            from("$rootDir/docs/txt") {
-                include '*.txt' // e.g.: license.txt
-            }
-            // add the product of `gradle :docs:api:doc` to the dist zip
-            into('docs/javadoc') {
-                from tasks.getByPath(':docs:api:doc').destinationDir
-            }
-            // add the product of `gradle :docs:reference:doc` to the dist zip
-            into('docs/reference') {
-                from tasks.getByPath(':docs:reference:doc').docsDir
-            }
-            // add everything in the spring-amqp-samples directory
-            into('samples') {
-                from(samplesDir) {
-                    exclude '*/build'   // e.g.: helloworld/build
-                    exclude '*/target'  // e.g.: helloworld/target
-                }
-            }
-            // add all jars and source jars from all core java projects
-            // (i.e.: don't include sample project jars!)
-            into('dist') {
-                from coreprojects.collect {project -> project.libsDir }
+    // configure the contents of the zip file. remember that this is a
+    // configuration phase event. no zip is being created yet. the Zip
+    // task we extend will do that for us during the execution phase.
+    into(zipRootDir) {
+        // include all changelog.txt, readme.txt, etc in the root dir
+        from("$rootDir/docs/txt") {
+            include '*.txt' // e.g.: license.txt
+        }
+        // add the product of `gradle :docs:api:doc` to the dist zip
+        into('docs/javadoc') {
+            from tasks.getByPath(':docs:api:doc').destinationDir
+        }
+        // add the product of `gradle :docs:reference:doc` to the dist zip
+        into('docs/reference') {
+            from tasks.getByPath(':docs:reference:doc').docsDir
+        }
+        // add everything in the spring-amqp-samples directory
+        into('samples') {
+            from(new File(project.rootDir, 'spring-amqp-samples')) {
+                exclude '*/build'   // e.g.: helloworld/build
+                exclude '*/target'  // e.g.: helloworld/target
             }
         }
+        // add all jars and source jars from all core java projects
+        // (i.e.: don't include sample project jars!)
+        into('dist') {
+            from coreprojects.collect { project -> project.libsDir }
+        }
+    }
 
+    // once the zip has been written, create a sha1 hash for it
+    // this will write out the file at ${checksumPath}
+    doLast {
         ant.checksum(file: archivePath, algorithm: 'SHA1', fileext: '.sha1')
+        assert file(checksumPath).isFile() : "${checksumPath} was not created"
     }
 }
 
-configurations { antlibs }
-dependencies {
-    antlibs "org.springframework.build:org.springframework.build.aws.ant:3.0.3.RELEASE",
-            "net.java.dev.jets3t:jets3t:0.6.1"
-}
 
-
+/**
+ * Upload the distribution zip file.
+ * @see UploadDist
+ */
 task uploadDist(dependsOn: dist, type: UploadDist) {
     archiveFile = dist.archivePath
-    shaFile = "${dist.archivePath}.sha1" as File
+    shaFile = dist.checksumPath as File
     archiveName = dist.archiveName
+
+    configurations { antlibs }
+    dependencies {
+        antlibs "org.springframework.build:org.springframework.build.aws.ant:3.0.3.RELEASE",
+                "net.java.dev.jets3t:jets3t:0.6.1"
+    }
+
     classpath = configurations.antlibs
 }
 
 
+/**
+ * Check all java projects for dependencies having a SNAPSHOT version.
+ */
 task checkSnapshotDeps {
     description = 'Checks for snapshot dependencies and aborts the build if found.'
+
+    if (project.version.releaseType == ReleaseType.MILESTONE ||
+            project.version.releaseType == ReleaseType.RELEASE) {
+        release.dependsOn checkSnapshotDeps
+    }
+
     doFirst() {
         def snapshotDependencies = new HashMap<Project, List<Dependency>>()
         javaprojects.collect { project ->
@@ -112,11 +154,3 @@ task checkSnapshotDeps {
     }
 }
 
-task release(dependsOn: ['uploadArchives', /*'uploadDoc',*/ 'uploadDist']) {
-    description = 'Releases the project including all artifact uploads.'
-}
-
-if (project.version.releaseType == ReleaseType.MILESTONE ||
-    project.version.releaseType == ReleaseType.RELEASE) {
-    release.dependsOn checkSnapshotDeps
-}
