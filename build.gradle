@@ -77,7 +77,7 @@ subprojects { }
 // - all subprojects within spring-amqp-samples are 'sample projects'
 // - all subprojects that start with spring-* are 'java projects'
 // - all non-sample java projects are considered 'core projects'
-// - documentation-related subprojects are not collected here (there's just one)
+// - documentation-related subprojects are not collected here
 //
 // @see configure(*) sections below
 // -----------------------------------------------------------------------------
