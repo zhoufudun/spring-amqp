@@ -147,7 +147,7 @@ task checkSnapshotDeps {
 
     doFirst() {
         def snapshotDependencies = new HashMap<Project, List<Dependency>>()
-        javaprojects.collect { project ->
+        javaprojects.each { project ->
             project.sourceSets.main.compileClasspath.allDependencies.each { dep ->
                 if (dep.version.endsWith('SNAPSHOT')) {
                     if (snapshotDependencies[project] == null)
@@ -159,7 +159,7 @@ task checkSnapshotDeps {
         if (snapshotDependencies.size() > 0) {
             println "you have snapshot dependencies"
             snapshotDependencies.each { entry ->
-                println "project ${entry.key} depends on:"
+                println "${entry.key} depends on:"
                 entry.value.each { dep ->
                     println "    ${dep}"
                 }

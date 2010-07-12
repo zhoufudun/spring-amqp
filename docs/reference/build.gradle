@@ -118,8 +118,7 @@ dependencies {
  * @author ltaylor
  */
 task upload(type: Tar, dependsOn: build) {
-    def rootProjectName = project.property('rootProjectName')
-    def docUrl = "http://${sshHost}/${rootProjectName}/docs/${project.version.wildcardValue}/reference"
+    def docUrl = "http://${sshHost}/${project.rootProject.name}/docs/${project.version.wildcardValue}/reference"
     description = "Uploads HTML and PDF reference documentation to ${docUrl}"
     classifier = 'reference'
     remoteDir = remoteDocsDir

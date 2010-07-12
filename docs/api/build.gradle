@@ -89,8 +89,7 @@ dependencies {
  * @author ltaylor
  */
 task upload(type: Tar, dependsOn: build) {
-    def rootProjectName = project.property('rootProjectName')
-    def docUrl = "http://${sshHost}/${rootProjectName}/docs/${project.version.wildcardValue}/api"
+    def docUrl = "http://${sshHost}/${project.rootProject.name}/docs/${project.version.wildcardValue}/api"
     description = "Uploads API documentation to ${docUrl}"
     classifier = 'api'
     remoteDir = remoteDocsDir
