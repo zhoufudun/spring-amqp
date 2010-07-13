@@ -31,7 +31,7 @@ apply plugin: 'base'
  * @author ltaylor
  * @see http://gradle.org/0.9-preview-3/docs/javadoc/org/gradle/api/tasks/javadoc/Javadoc.html
  */
-task build(type: Javadoc) {
+ task aggregateJavadoc(type: Javadoc) {
     description = "Builds aggregated JavaDoc HTML for all core project classes."
 
     // this task is a bit ugly to configure. it was a user contribution, and
@@ -68,11 +68,16 @@ task build(type: Javadoc) {
     }
 }
 
-// Define remoteSiteDir and sshHost in gradle.properties
-def remoteDocsDir = null
 
-if (hasProperty('remoteSiteDir')) {
-    remoteDocsDir="$remoteSiteDir/docs/1.0.x"
+/**
+ *
+ * @see http://www.gradle.org/0.9-preview-3/docs/userguide/userguide_single.html#sec:copying_files
+ * @see http://www.gradle.org/0.9-preview-3/docs/javadoc/org/gradle/api/file/CopySpec.html
+ */
+docsSpec = copySpec {
+    into('api') {
+        from(buildDir)
+    }
 }
 
 configurations { scpAntTask }
@@ -80,52 +85,63 @@ dependencies {
     scpAntTask("org.apache.ant:ant-jsch:1.8.1")
 }
 
-/**
- * Upload API documentation via SSH (scp).
- *
- * TODO: remove duplication between this and :docs:reference:upload task
- *
- * @author cbeams
- * @author ltaylor
- */
-task upload(type: Tar, dependsOn: build) {
-    def docUrl = "http://${sshHost}/${project.rootProject.name}/docs/${project.version.wildcardValue}/api"
-    description = "Uploads API documentation to ${docUrl}"
-    classifier = 'api'
-    remoteDir = remoteDocsDir
+
+task build(dependsOn: assemble) {
+}
+
+
+task docsArchive(type: Tar, dependsOn: aggregateJavadoc) {
+    description = "Create a tbz2 archive of API javadoc."
+
+    baseName = rootProject.name + '-api'
     compression = Compression.BZIP2
 
-    into('api') {
-        from build.destinationDir
+    with docsSpec
+}
+
+configurations { archives }
+artifacts { archives docsArchive }
+
+uploadArchives {
+    def docUrl = "http://${sshHost}/${rootProject.name}/docs/${version.wildcardValue}/api"
+    def remoteDocsDir = "${remoteSiteDir}/docs/${version.wildcardValue}"
+    def fqRemoteDir = "${sshUsername}@${sshHost}:${remoteDocsDir}"
+
+    description = "Uploads API documentation to ${docUrl}"
+
+    uploadDescriptor = false
+
+    repositories {
+        add(new org.apache.ivy.plugins.resolver.SshResolver()) {
+            name = sshHost // used for debugging
+            host = sshHost
+            user = sshUsername
+            keyFile = sshPrivateKey as File
+            addArtifactPattern "${remoteDocsDir}/${docsArchive.archiveName}"
+        }
     }
 
-    doLast() {
-        String username = project.property('sshUsername')
-        String keyfile = project.property('sshPrivateKey')
-        String host = project.property('sshHost')
+    doFirst {
+        println "Uploading: ${docsArchive.archivePath} to ${fqRemoteDir}"
+    }
 
+    doLast {
         project.ant {
-
-            // TODO: get progress metrics by hooking in a listener via Jsch, or ivy resolver, etc.
-            taskdef(name: 'scp',
-                classname: 'org.apache.tools.ant.taskdefs.optional.ssh.Scp', classpath: configurations.scpAntTask.asPath)
             taskdef(name: 'sshexec',
-                classname: 'org.apache.tools.ant.taskdefs.optional.ssh.SSHExec', classpath: configurations.scpAntTask.asPath)
-
-            // make the remote dir if it doesn't exist yet
-            sshexec(host: host, username: username, keyfile: keyfile, command: "mkdir -p $remoteDir")
+                classname: 'org.apache.tools.ant.taskdefs.optional.ssh.SSHExec',
+                classpath: configurations.scpAntTask.asPath)
 
             // copy the archive, unpack it, then delete it
-            def fqRemoteDir = "${username}@${host}:${remoteDir}"
-            def unpackCommand = "cd ${remoteDir} && tar -xjf ${archiveName}"
-            def deleteCommand = "rm ${remoteDir}/${archiveName}"
+            //def mkdirCommand = "mkdir -p ${remoteDocsDir}"
+            def unpackCommand = "cd ${remoteDocsDir} && tar -xjf ${docsArchive.archiveName}"
+            def deleteCommand = "rm ${remoteDocsDir}/${docsArchive.archiveName}"
 
-            println "scp ${archivePath} -> ${fqRemoteDir}"
-            scp(file: archivePath, todir: fqRemoteDir, keyfile: keyfile)
+            //println "sshexec ${mkdirCommand}"
+            //sshexec(host: sshHost, username: sshUsername, keyfile: sshPrivateKey, command: mkdirCommand)
             println "sshexec ${unpackCommand}"
-            sshexec(host: host, username: username, keyfile: keyfile, command: unpackCommand)
+            sshexec(host: sshHost, username: sshUsername, keyfile: sshPrivateKey, command: unpackCommand)
             println "sshexec ${deleteCommand}"
-            sshexec(host: host, username: username, keyfile: keyfile, command: deleteCommand)
+            sshexec(host: sshHost, username: sshUsername, keyfile: sshPrivateKey, command: deleteCommand)
             println "UPLOAD SUCCESSFUL - validate by visiting ${docUrl}"
         }
     }

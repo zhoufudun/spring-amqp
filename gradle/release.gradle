@@ -73,7 +73,7 @@ task dist(type: Zip) {
         }
         // add the product of `gradle :docs:api:build` to the dist zip
         into('docs/api') {
-            from tasks.getByPath(':docs:api:build').destinationDir
+            with project(':docs:api').docsSpec
         }
         // add the product of `gradle :docs:reference:build` to the dist zip
         into('docs') {

@@ -112,13 +112,6 @@ task build (dependsOn: assemble) {
 }
 
 
-/**
- * Create a tbz2 archive of HTML and PDF reference documentation.
- *
- * @author cbeams
- * @author ltaylor
- * @see docsSpec
- */
 task docsArchive(type: Tar, dependsOn: [docbookHtml, docbookHtmlSingle, docbookPdf]) {
     description = "Create a tbz2 archive of HTML and PDF reference documentation."
 
@@ -129,13 +122,8 @@ task docsArchive(type: Tar, dependsOn: [docbookHtml, docbookHtmlSingle, docbookP
 }
 
 configurations { archives }
-artifacts {
-    archives docsArchive
-}
+artifacts { archives docsArchive }
 
-/**
- * Customize the uploadArchives rule.
- */
 uploadArchives {
     def docUrl = "http://${sshHost}/${rootProject.name}/docs/${version.wildcardValue}/reference"
     def remoteDocsDir = "${remoteSiteDir}/docs/${version.wildcardValue}"
@@ -156,7 +144,7 @@ uploadArchives {
     }
 
     doFirst {
-        println "scp ${docsArchive.archivePath} -> ${fqRemoteDir}"
+        println "Uploading ${docsArchive.archivePath} to ${fqRemoteDir}"
     }
 
     doLast {
@@ -180,4 +168,3 @@ uploadArchives {
         }
     }
 }
-
