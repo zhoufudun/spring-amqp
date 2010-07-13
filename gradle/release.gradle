@@ -25,31 +25,22 @@ import org.springframework.build.Version.ReleaseType
 
 // ensure that every project has been evaluated before this script
 // this allows us to look up tasks below and dereference dynamically
-// assigned properties
+// assigned properties like 'docsSpec' below
 project.subprojects.each { project ->
     evaluationDependsOn project.path
 }
 
-/**
- * Convenience task that depends on all other upload-related tasks.
- *
- * @author cbeams
- */
-task release(dependsOn: ['uploadArchives', /*'uploadDoc',*/ 'uploadDist']) {
-    description = 'Releases the project including all artifact uploads.'
-}
 
+task build(dependsOn: assemble)
 
 /**
  * Build the distribution zip file.
  *
  * @author cbeams
  */
-task dist(type: Zip) {
-    dependsOn = [':spring-amqp-core:build', ':spring-rabbit:build',
-                 ':spring-rabbit-admin:build', ':spring-otp:build',
-                 ':docs:api:build', ':docs:reference:build',
-                 ':docs:reference:assemble']
+task distArchive(type: Zip) {
+    // depend on all projects with an assemble task
+    dependsOn subprojects*.tasks*.matching { task -> task.name == 'assemble' }
 
     destinationDir = buildDir
     archiveName = "${project.name}-${project.version}.zip"
@@ -110,13 +101,9 @@ task dist(type: Zip) {
  *
  * @author ltaylor
  * @author cbeams
- * @see org.springframework.build.gradle.tasks.UploadDist
  */
-task uploadDist(dependsOn: dist, type: UploadDist) {
+task uploadArchives(overwrite: true, dependsOn: distArchive) { // base plugin adds one we need to overwrite
     description = 'Uploads the distribution zip file.'
-    archiveFile = dist.archivePath
-    shaFile = dist.checksumPath as File
-    archiveName = dist.archiveName
 
     configurations { antlibs }
     dependencies {
@@ -124,7 +111,26 @@ task uploadDist(dependsOn: dist, type: UploadDist) {
                 "net.java.dev.jets3t:jets3t:0.6.1"
     }
 
-    classpath = configurations.antlibs
+    def releaseType = version.releaseType.toString().toLowerCase()
+
+    doLast() {
+        println "Uploading: ${distArchive.archivePath} to s3"
+        project.ant {
+            taskdef(resource: 'org/springframework/build/aws/ant/antlib.xml',
+                    classpath: configurations.antlibs.asPath)
+            s3(accessKey: s3AccessKey, secretKey: s3SecretAccessKey) {
+                upload(bucketName: 'dist.springframework.org', file: distArchive.archivePath,
+                        toFile: releaseType + "/AMQP/${distArchive.archiveName}", publicRead: 'true') {
+                    metadata(name: 'project.name', value: 'Spring AMQP')
+                    metadata(name: 'release.type', value: releaseType)
+                    metadata(name: 'bundle.version', value: version)
+                    metadata(name: 'package.file.name', value: distArchive.archiveName)
+                }
+                upload(bucketName: 'dist.springframework.org', file: "${distArchive.archivePath}.sha1",
+                        toFile: releaseType + "/AMQP/${distArchive.archiveName}.sha1", publicRead: 'true')
+            }
+        }
+    }
 }
 
 
@@ -141,8 +147,8 @@ task uploadDist(dependsOn: dist, type: UploadDist) {
 task checkSnapshotDeps {
     description = 'Checks for snapshot dependencies and aborts the build if found.'
 
-    if (project.version.releaseType == ReleaseType.MILESTONE ||
-            project.version.releaseType == ReleaseType.RELEASE) {
+    if (version.releaseType == ReleaseType.MILESTONE ||
+            version.releaseType == ReleaseType.RELEASE) {
         release.dependsOn checkSnapshotDeps
     }
 

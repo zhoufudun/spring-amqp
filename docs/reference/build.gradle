@@ -144,7 +144,7 @@ uploadArchives {
     }
 
     doFirst {
-        println "Uploading ${docsArchive.archivePath} to ${fqRemoteDir}"
+        println "Uploading: ${docsArchive.archivePath} to ${fqRemoteDir}"
     }
 
     doLast {
