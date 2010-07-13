@@ -20,7 +20,7 @@ import org.springframework.build.Version.ReleaseType
 // -----------------------------------------------------------------------------
 // Main gradle build file for Spring AMQP
 //
-// - run `./gradlew(.bat) build` to kick off a complete compile-and-test
+// - run `./gradlew(.bat) build` to kick off a complete compile-test-package
 //
 // - the imports above are from groovy and/or java classes in buildSrc/
 //   or from jars on 'buildscript' classpath (in our case, it's all buildSrc)
@@ -197,6 +197,8 @@ project('spring-amqp-core') {
 }
 
 project('spring-otp') {
+    erlangLicense = true
+
     dependencies {
         compile "org.springframework:spring-beans:$springVersion"
         compile "org.erlang.otp:jinterface:$erlangVersion"
