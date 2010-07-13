@@ -76,9 +76,10 @@ task dist(type: Zip) {
             from tasks.getByPath(':docs:api:build').destinationDir
         }
         // add the product of `gradle :docs:reference:build` to the dist zip
-        into('docs/reference') {
-            from tasks.getByPath(':docs:reference:build').docsDir
+        into('docs') {
+            with project(':docs:reference').docsSpec
         }
+
         // add each subproject, but only add the 'src' dir and 'pom.xml'
         project('spring-amqp-samples').subprojects.each { sample ->
             into("${zipRootDir}/samples/${sample.name}") {

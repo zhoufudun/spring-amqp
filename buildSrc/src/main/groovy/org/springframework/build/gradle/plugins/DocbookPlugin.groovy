@@ -101,6 +101,10 @@ public class Docbook extends DefaultTask {
 
     @TaskAction
     public final void transform() {
+        // the docbook tasks issue spurious content to the console. redirect to
+        // INFO level so it doesn't show up in the default log level of LIFECYCLE
+        captureStandardOutput(org.gradle.api.logging.LogLevel.INFO)
+
         SAXParserFactory factory = new org.apache.xerces.jaxp.SAXParserFactoryImpl();
         factory.setXIncludeAware(XIncludeAware);
         docsDir.mkdirs();

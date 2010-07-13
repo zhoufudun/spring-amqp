@@ -39,7 +39,7 @@ apply plugin: 'docbook'
  * a feature not yet implemented, but on the Gradle roadmap.
  *
  * @author cbeams
- * @see http://jira.codehaus.org/browse/GRADLE-1026 for more info.
+ * @see http://jira.codehaus.org/browse/GRADLE-1026
  */
 task preprocessDocbookSources {
     description = 'Expands ${...} variables within docbook sources.'
@@ -78,84 +78,106 @@ def imagesDir = new File(projectDir, 'src/docbook/images');
 docbookPdf.admonGraphicsPath = "${imagesDir}/"
 
 
-/**
- * Build HTML and PDF reference documentation from docbook sources.
- *
- * @author cbeams
- */
-task build (dependsOn: [docbookHtml, docbookHtmlSingle, docbookPdf]) {
-    description = 'Builds reference documentation in html, html-single and PDF formats.'
-
-    docsDir = new File(buildDir, 'docs')
-    resourcesDir = new File(projectDir, 'src/resources')
-
-    doLast {
-        ant {
-            copy(toDir: docsDir) { fileset(dir: resourcesDir) }
-            copy(toDir: new File(docsDir, 'images')) { fileset(dir: imagesDir) }
-        }
-    }
-}
-
-// Define remoteSiteDir and sshHost in gradle.properties
-def remoteDocsDir = null
-
-if (hasProperty('remoteSiteDir')) {
-    remoteDocsDir="$remoteSiteDir/docs/1.0.x"
-}
-
 configurations { scpAntTask }
 dependencies {
     scpAntTask("org.apache.ant:ant-jsch:1.8.1")
 }
 
+
 /**
- * Upload HTML and PDF reference documentation via SSH (scp).
  *
- * TODO: remove duplication between this and :docs:api:upload task
+ * @see http://www.gradle.org/0.9-preview-3/docs/userguide/userguide_single.html#sec:copying_files
+ * @see http://www.gradle.org/0.9-preview-3/docs/javadoc/org/gradle/api/file/CopySpec.html
+ */
+docsSpec = copySpec {
+    into('reference') {
+        from("${buildDir}/docs")
+        into('images') {
+            from "${projectDir}/src/docbook/images"
+        }
+        into('css') {
+            from "${projectDir}/src/resources/css"
+        }
+    }
+}
+
+
+/**
+ * Build HTML and PDF reference documentation from docbook sources.
+ *
+ * @author cbeams
+ */
+task build (dependsOn: assemble) {
+    //description = 'Builds reference documentation in html, html-single and PDF formats.'
+}
+
+
+/**
+ * Create a tbz2 archive of HTML and PDF reference documentation.
  *
  * @author cbeams
  * @author ltaylor
+ * @see docsSpec
  */
-task upload(type: Tar, dependsOn: build) {
-    def docUrl = "http://${sshHost}/${project.rootProject.name}/docs/${project.version.wildcardValue}/reference"
-    description = "Uploads HTML and PDF reference documentation to ${docUrl}"
-    classifier = 'reference'
-    remoteDir = remoteDocsDir
+task docsArchive(type: Tar, dependsOn: [docbookHtml, docbookHtmlSingle, docbookPdf]) {
+    description = "Create a tbz2 archive of HTML and PDF reference documentation."
+
+    baseName = rootProject.name + '-reference'
     compression = Compression.BZIP2
 
-    into('reference') {
-        from build.docsDir
+    with docsSpec
+}
+
+configurations { archives }
+artifacts {
+    archives docsArchive
+}
+
+/**
+ * Customize the uploadArchives rule.
+ */
+uploadArchives {
+    def docUrl = "http://${sshHost}/${rootProject.name}/docs/${version.wildcardValue}/reference"
+    def remoteDocsDir = "${remoteSiteDir}/docs/${version.wildcardValue}"
+    def fqRemoteDir = "${sshUsername}@${sshHost}:${remoteDocsDir}"
+
+    description = "Uploads HTML and PDF reference documentation to ${docUrl}"
+
+    uploadDescriptor = false
+
+    repositories {
+        add(new org.apache.ivy.plugins.resolver.SshResolver()) {
+            name = sshHost // used for debugging
+            host = sshHost
+            user = sshUsername
+            keyFile = sshPrivateKey as File
+            addArtifactPattern "${remoteDocsDir}/${docsArchive.archiveName}"
+        }
     }
 
-    doLast() {
-        String username = project.property('sshUsername')
-        String keyfile = project.property('sshPrivateKey')
-        String host = project.property('sshHost')
+    doFirst {
+        println "scp ${docsArchive.archivePath} -> ${fqRemoteDir}"
+    }
 
+    doLast {
         project.ant {
-
-            // TODO: get progress metrics by hooking in a listener via Jsch, or ivy resolver, etc.
-            taskdef(name: 'scp',
-                classname: 'org.apache.tools.ant.taskdefs.optional.ssh.Scp', classpath: configurations.scpAntTask.asPath)
             taskdef(name: 'sshexec',
-                classname: 'org.apache.tools.ant.taskdefs.optional.ssh.SSHExec', classpath: configurations.scpAntTask.asPath)
-
-            // make the remote dir if it doesn't exist yet
-            sshexec(host: host, username: username, keyfile: keyfile, command: "mkdir -p $remoteDir")
+                classname: 'org.apache.tools.ant.taskdefs.optional.ssh.SSHExec',
+                classpath: configurations.scpAntTask.asPath)
 
             // copy the archive, unpack it, then delete it
-            def fqRemoteDir = "${username}@${host}:${remoteDir}"
-            def unpackCommand = "cd ${remoteDir} && tar -xjf ${archiveName}"
-            def deleteCommand = "rm ${remoteDir}/${archiveName}"
+            //def mkdirCommand = "mkdir -p ${remoteDocsDir}"
+            def unpackCommand = "cd ${remoteDocsDir} && tar -xjf ${docsArchive.archiveName}"
+            def deleteCommand = "rm ${remoteDocsDir}/${docsArchive.archiveName}"
 
-            println "scp ${archivePath} -> ${fqRemoteDir}"
-            scp(file: archivePath, todir: fqRemoteDir, keyfile: keyfile)
+            //println "sshexec ${mkdirCommand}"
+            //sshexec(host: sshHost, username: sshUsername, keyfile: sshPrivateKey, command: mkdirCommand)
             println "sshexec ${unpackCommand}"
-            sshexec(host: host, username: username, keyfile: keyfile, command: unpackCommand)
+            sshexec(host: sshHost, username: sshUsername, keyfile: sshPrivateKey, command: unpackCommand)
             println "sshexec ${deleteCommand}"
-            sshexec(host: host, username: username, keyfile: keyfile, command: deleteCommand)
+            sshexec(host: sshHost, username: sshUsername, keyfile: sshPrivateKey, command: deleteCommand)
             println "UPLOAD SUCCESSFUL - validate by visiting ${docUrl}"
         }
     }
 }
+
