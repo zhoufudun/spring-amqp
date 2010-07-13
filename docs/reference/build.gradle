@@ -124,47 +124,49 @@ task docsArchive(type: Tar, dependsOn: [docbookHtml, docbookHtmlSingle, docbookP
 configurations { archives }
 artifacts { archives docsArchive }
 
-uploadArchives {
-    def docUrl = "http://${sshHost}/${rootProject.name}/docs/${version.wildcardValue}/reference"
-    def remoteDocsDir = "${remoteSiteDir}/docs/${version.wildcardValue}"
-    def fqRemoteDir = "${sshUsername}@${sshHost}:${remoteDocsDir}"
+if (role == 'buildmaster') {
+    uploadArchives {
+        def docUrl = "http://${sshHost}/${rootProject.name}/docs/${version.wildcardValue}/reference"
+        def remoteDocsDir = "${remoteSiteDir}/docs/${version.wildcardValue}"
+        def fqRemoteDir = "${sshUsername}@${sshHost}:${remoteDocsDir}"
 
-    description = "Uploads HTML and PDF reference documentation to ${docUrl}"
+        description = "Uploads HTML and PDF reference documentation to ${docUrl}"
 
-    uploadDescriptor = false
+        uploadDescriptor = false
 
-    repositories {
-        add(new org.apache.ivy.plugins.resolver.SshResolver()) {
-            name = sshHost // used for debugging
-            host = sshHost
-            user = sshUsername
-            keyFile = sshPrivateKey as File
-            addArtifactPattern "${remoteDocsDir}/${docsArchive.archiveName}"
+        repositories {
+            add(new org.apache.ivy.plugins.resolver.SshResolver()) {
+                name = sshHost // used for debugging
+                host = sshHost
+                user = sshUsername
+                keyFile = sshPrivateKey as File
+                addArtifactPattern "${remoteDocsDir}/${docsArchive.archiveName}"
+            }
         }
-    }
 
-    configurations { scpAntTask }
-    dependencies { scpAntTask 'org.apache.ant:ant-jsch:1.8.1' }
+        configurations { scpAntTask }
+        dependencies { scpAntTask 'org.apache.ant:ant-jsch:1.8.1' }
 
-    doFirst {
-        println "Uploading: ${docsArchive.archivePath} to ${fqRemoteDir}"
-    }
+        doFirst {
+            println "Uploading: ${docsArchive.archivePath} to ${fqRemoteDir}"
+        }
 
-    doLast {
-        project.ant {
-            taskdef(name: 'sshexec',
-                classname: 'org.apache.tools.ant.taskdefs.optional.ssh.SSHExec',
-                classpath: configurations.scpAntTask.asPath)
+        doLast {
+            project.ant {
+                taskdef(name: 'sshexec',
+                    classname: 'org.apache.tools.ant.taskdefs.optional.ssh.SSHExec',
+                    classpath: configurations.scpAntTask.asPath)
 
-            // copy the archive, unpack it, then delete it
-            def unpackCommand = "cd ${remoteDocsDir} && tar -xjf ${docsArchive.archiveName}"
-            def deleteCommand = "rm ${remoteDocsDir}/${docsArchive.archiveName}"
+                // copy the archive, unpack it, then delete it
+                def unpackCommand = "cd ${remoteDocsDir} && tar -xjf ${docsArchive.archiveName}"
+                def deleteCommand = "rm ${remoteDocsDir}/${docsArchive.archiveName}"
 
-            println "sshexec ${unpackCommand}"
-            sshexec(host: sshHost, username: sshUsername, keyfile: sshPrivateKey, command: unpackCommand)
-            println "sshexec ${deleteCommand}"
-            sshexec(host: sshHost, username: sshUsername, keyfile: sshPrivateKey, command: deleteCommand)
-            println "UPLOAD SUCCESSFUL - validate by visiting ${docUrl}"
+                println "sshexec ${unpackCommand}"
+                sshexec(host: sshHost, username: sshUsername, keyfile: sshPrivateKey, command: unpackCommand)
+                println "sshexec ${deleteCommand}"
+                sshexec(host: sshHost, username: sshUsername, keyfile: sshPrivateKey, command: deleteCommand)
+                println "UPLOAD SUCCESSFUL - validate by visiting ${docUrl}"
+            }
         }
     }
 }

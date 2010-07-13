@@ -231,7 +231,7 @@ project('spring-rabbit-admin') {
         compile "org.springframework:spring-context:$springVersion"
         compile "org.springframework:spring-oxm:$springVersion"
         compile "org.springframework:spring-test:$springVersion"
-        compile "org.springframework:spring-tx:$springVersion"
+        compile "org.springframework:spring-tx:3.0.4.BUILD-SNAPSHOT"
         compile 'junit:junit:4.7'
         testCompile "org.erlang.otp:jinterface:$erlangVersion"
         testCompile "org.springframework:spring-beans:$springVersion"
@@ -290,6 +290,13 @@ project(':spring-amqp-samples:stocks') {
 }
 
 
+// add tasks like 'distArchive'
+apply from: "$rootDir/gradle/release.gradle"
+
+// add tasks like 'snapshotDependencyCheck'
+apply from: "${rootDir}/gradle/checks.gradle"
+
+
 // -----------------------------------------------------------------------------
 // Conditionally import tasks related to releasing and managing the project
 // depending on the role played by the current user.
@@ -297,8 +304,6 @@ project(':spring-amqp-samples:stocks') {
 // @see gradle.properties for more information on roles
 // -----------------------------------------------------------------------------
 if (project.properties['role'] == 'buildmaster') {
-    // add tasks for releasing the project such as 'dist', 'uploadDist', etc.
-    apply from: "$rootDir/gradle/release.gradle"
 
     // add management tasks like `wrapper` for generating the gradlew* scripts
     apply from: "$rootDir/gradle/wrapper.gradle"

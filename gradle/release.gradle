@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-import org.springframework.build.gradle.tasks.UploadDist;
-import org.springframework.build.Version.ReleaseType
-
 // -----------------------------------------------------------------------------
 // Task definitions related to releasing the project
 //
@@ -30,8 +27,9 @@ project.subprojects.each { project ->
     evaluationDependsOn project.path
 }
 
+task check()
 
-task build(dependsOn: assemble)
+task build(dependsOn: [check, assemble])
 
 /**
  * Build the distribution zip file.
@@ -96,85 +94,43 @@ task distArchive(type: Zip) {
 }
 
 
-/**
- * Upload the distribution zip file.
- *
- * @author ltaylor
- * @author cbeams
- */
-task uploadArchives(overwrite: true, dependsOn: distArchive) { // base plugin adds one we need to overwrite
-    description = 'Uploads the distribution zip file.'
+if (role == 'buildmaster') {
+    /**
+     * Upload the distribution zip file.
+     *
+     * @author ltaylor
+     * @author cbeams
+     */
+    task uploadArchives(overwrite: true, dependsOn: distArchive) { // base plugin adds one we need to overwrite
+        description = 'Uploads the distribution zip file.'
 
-    configurations { antlibs }
-    dependencies {
-        antlibs "org.springframework.build:org.springframework.build.aws.ant:3.0.3.RELEASE",
-                "net.java.dev.jets3t:jets3t:0.6.1"
-    }
+        configurations { antlibs }
+        dependencies {
+            antlibs "org.springframework.build:org.springframework.build.aws.ant:3.0.3.RELEASE",
+                    "net.java.dev.jets3t:jets3t:0.6.1"
+        }
 
-    def releaseType = version.releaseType.toString().toLowerCase()
+        def releaseType = version.releaseType.toString().toLowerCase()
 
-    doLast() {
-        println "Uploading: ${distArchive.archivePath} to s3"
-        project.ant {
-            taskdef(resource: 'org/springframework/build/aws/ant/antlib.xml',
-                    classpath: configurations.antlibs.asPath)
-            s3(accessKey: s3AccessKey, secretKey: s3SecretAccessKey) {
-                upload(bucketName: 'dist.springframework.org', file: distArchive.archivePath,
-                        toFile: releaseType + "/AMQP/${distArchive.archiveName}", publicRead: 'true') {
-                    metadata(name: 'project.name', value: 'Spring AMQP')
-                    metadata(name: 'release.type', value: releaseType)
-                    metadata(name: 'bundle.version', value: version)
-                    metadata(name: 'package.file.name', value: distArchive.archiveName)
+        doLast() {
+            println "Uploading: ${distArchive.archivePath} to s3"
+            project.ant {
+                taskdef(resource: 'org/springframework/build/aws/ant/antlib.xml',
+                        classpath: configurations.antlibs.asPath)
+                s3(accessKey: s3AccessKey, secretKey: s3SecretAccessKey) {
+                    upload(bucketName: 'dist.springframework.org', file: distArchive.archivePath,
+                            toFile: releaseType + "/AMQP/${distArchive.archiveName}", publicRead: 'true') {
+                        metadata(name: 'project.name', value: 'Spring AMQP')
+                        metadata(name: 'release.type', value: releaseType)
+                        metadata(name: 'bundle.version', value: version)
+                        metadata(name: 'package.file.name', value: distArchive.archiveName)
+                    }
+                    upload(bucketName: 'dist.springframework.org', file: "${distArchive.archivePath}.sha1",
+                            toFile: releaseType + "/AMQP/${distArchive.archiveName}.sha1", publicRead: 'true')
                 }
-                upload(bucketName: 'dist.springframework.org', file: "${distArchive.archivePath}.sha1",
-                        toFile: releaseType + "/AMQP/${distArchive.archiveName}.sha1", publicRead: 'true')
             }
         }
     }
 }
 
-
-/**
- * Check all java projects for dependencies having a SNAPSHOT version and abort
- * the build if found.  This task can be used standalone at any time, but is
- * intended primarily for use during the project release workflow.  It is
- * important that any non-snapshot build be checked for snapshot dependencies
- * before final publication, as snapshot dependencies may change and thus make
- * the build unstable and/or unreproducable.
- *
- * @author cbeams
- */
-task checkSnapshotDeps {
-    description = 'Checks for snapshot dependencies and aborts the build if found.'
-
-    if (version.releaseType == ReleaseType.MILESTONE ||
-            version.releaseType == ReleaseType.RELEASE) {
-        release.dependsOn checkSnapshotDeps
-    }
-
-    doFirst() {
-        def snapshotDependencies = new HashMap<Project, List<Dependency>>()
-        javaprojects.each { project ->
-            project.sourceSets.main.compileClasspath.allDependencies.each { dep ->
-                if (dep.version.endsWith('SNAPSHOT')) {
-                    if (snapshotDependencies[project] == null)
-                        snapshotDependencies[project] = new ArrayList<Dependency>()
-                    snapshotDependencies[project].add(dep)
-                }
-            }
-        }
-        if (snapshotDependencies.size() > 0) {
-            println "you have snapshot dependencies"
-            snapshotDependencies.each { entry ->
-                println "${entry.key} depends on:"
-                entry.value.each { dep ->
-                    println "    ${dep}"
-                }
-            }
-            throw new GradleException(
-                "aborting '${name}' task due to snapshot dependencies. "
-                + "supply -PignoreSnapshotDependencies to override")
-        }
-    }
-}
 
