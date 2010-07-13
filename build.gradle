@@ -41,8 +41,10 @@ allprojects {
 
     // version will be used in maven pom generation as well as determining
     // where artifacts should be deployed, based on release type of snapshot,
-    // milestone or release.  See Version sources in buildSrc/ for more info
-    version = new Version('1.0.0.BUILD-SNAPSHOT')
+    // milestone or release.
+    // @see org.springframework.build.Version under buildSrc/ for more info
+    // @see gradle.properties for the declaration of this property.
+    version = new Version(springAmqpVersion)
 
     // defoult set of maven repositories to be used when resolving dependencies
     repositories {
