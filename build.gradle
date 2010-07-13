@@ -228,7 +228,7 @@ project('spring-rabbit-admin') {
         compile "org.springframework:spring-context:$springVersion"
         compile "org.springframework:spring-oxm:$springVersion"
         compile "org.springframework:spring-test:$springVersion"
-        compile "org.springframework:spring-tx:3.0.4.BUILD-SNAPSHOT"
+        compile "org.springframework:spring-tx:$springVersion"
         compile 'junit:junit:4.7'
         testCompile "org.erlang.otp:jinterface:$erlangVersion"
         testCompile "org.springframework:spring-beans:$springVersion"
