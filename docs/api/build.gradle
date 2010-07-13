@@ -80,12 +80,6 @@ docsSpec = copySpec {
     }
 }
 
-configurations { scpAntTask }
-dependencies {
-    scpAntTask("org.apache.ant:ant-jsch:1.8.1")
-}
-
-
 task build(dependsOn: assemble) {
 }
 
@@ -121,6 +115,9 @@ uploadArchives {
         }
     }
 
+    configurations { scpAntTask }
+    dependencies { scpAntTask 'org.apache.ant:ant-jsch:1.8.1' }
+
     doFirst {
         println "Uploading: ${docsArchive.archivePath} to ${fqRemoteDir}"
     }
@@ -132,12 +129,9 @@ uploadArchives {
                 classpath: configurations.scpAntTask.asPath)
 
             // copy the archive, unpack it, then delete it
-            //def mkdirCommand = "mkdir -p ${remoteDocsDir}"
             def unpackCommand = "cd ${remoteDocsDir} && tar -xjf ${docsArchive.archiveName}"
             def deleteCommand = "rm ${remoteDocsDir}/${docsArchive.archiveName}"
 
-            //println "sshexec ${mkdirCommand}"
-            //sshexec(host: sshHost, username: sshUsername, keyfile: sshPrivateKey, command: mkdirCommand)
             println "sshexec ${unpackCommand}"
             sshexec(host: sshHost, username: sshUsername, keyfile: sshPrivateKey, command: unpackCommand)
             println "sshexec ${deleteCommand}"
