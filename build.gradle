@@ -111,7 +111,7 @@ configure(javaprojects) {
     apply plugin: 'org.gradle.idea' // `gradle idea` to generate .ipr/.iml
 
     springVersion = '3.0.3.RELEASE'
-    rabbitVersion = '1.8.0'
+    rabbitVersion = '1.8.1'
     erlangVersion = '1.5.3'
     slf4jVersion = '1.5.10'
 
