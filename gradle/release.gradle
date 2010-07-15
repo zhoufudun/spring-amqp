@@ -61,11 +61,9 @@ task distArchive(type: Zip) {
             include '*.txt' // e.g.: license.txt
         }
         // add the product of `gradle :docs:api:build` to the dist zip
-        into('docs/api') {
-            with project(':docs:api').docsSpec
-        }
         // add the product of `gradle :docs:reference:build` to the dist zip
         into('docs') {
+            with project(':docs:api').docsSpec
             with project(':docs:reference').docsSpec
         }
 

@@ -21,6 +21,7 @@
  */
 include 'docs:api',
         'docs:reference',
+        'docs:txt',
         'spring-amqp-core',
         'spring-otp',
         'spring-rabbit',

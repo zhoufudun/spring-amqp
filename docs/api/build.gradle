@@ -76,7 +76,9 @@ apply plugin: 'base'
  */
 docsSpec = copySpec {
     into('api') {
-        from(buildDir)
+        from(buildDir) {
+            exclude 'tmp'
+        }
     }
 }
 

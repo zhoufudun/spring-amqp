@@ -91,11 +91,16 @@ dependencies {
  */
 docsSpec = copySpec {
     into('reference') {
+        // copy everything from the docs dir
         from("${buildDir}/docs")
-        into('images') {
+    }
+
+    // copy images and css into respective html dirs
+    ['html', 'htmlsingle'].each { dir ->
+        into("reference/${dir}/images") {
             from "${projectDir}/src/docbook/images"
         }
-        into('css') {
+        into("reference/${dir}/css") {
             from "${projectDir}/src/resources/css"
         }
     }

@@ -56,16 +56,18 @@ import com.icl.saxon.TransformerFactoryImpl;
 class DocbookPlugin implements Plugin<Project> {
     public void apply(Project project) {
         // Add the plugin tasks to the project
-        Task docbookHtml = project.tasks.add('docbookHtml', DocbookHtml.class);
-        docbookHtml.setDescription('Generates chunked docbook html output.');
+        Task docbookHtml = project.tasks.add('docbookHtml', DocbookHtml.class)
+        docbookHtml.setDescription('Generates chunked docbook html output.')
+        docbookHtml.xdir = 'html'
 
         Task docbookHtmlSingle = project.tasks.add('docbookHtmlSingle', Docbook.class);
         docbookHtmlSingle.setDescription('Generates single page docbook html output.')
-        docbookHtmlSingle.suffix = '-single'
+        docbookHtmlSingle.xdir = 'htmlsingle'
 
-        Task docbookPdf = project.tasks.add("docbookPdf", DocbookFoPdf.class);
-        docbookPdf.setDescription('Generates PDF docbook output.');
+        Task docbookPdf = project.tasks.add("docbookPdf", DocbookFoPdf.class)
+        docbookPdf.setDescription('Generates PDF docbook output.')
         docbookPdf.extension = 'fo'
+        docbookPdf.xdir = 'pdf'
     }
 }
 
@@ -75,9 +77,6 @@ public class Docbook extends DefaultTask {
 
     @Input
     String extension = 'html';
-
-    @Input
-    String suffix = '';
 
     @Input
     boolean XIncludeAware = true;
@@ -110,9 +109,10 @@ public class Docbook extends DefaultTask {
         docsDir.mkdirs();
 
         File srcFile = new File(sourceDirectory, sourceFileName);
-        String outputFilename = srcFile.getName().substring(0, srcFile.getName().length() - 4) + suffix + '.' + extension;
+        String outputFilename = srcFile.getName().substring(0, srcFile.getName().length() - 4) + '.' + extension;
 
-        File outputFile = new File(getDocsDir(), outputFilename);
+        File oDir = new File(getDocsDir(), xdir)
+        File outputFile = new File(oDir, outputFilename);
 
         Result result = new StreamResult(outputFile.getAbsolutePath());
         CatalogResolver resolver = new CatalogResolver(createCatalogManager());
