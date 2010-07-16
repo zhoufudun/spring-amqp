@@ -2,6 +2,8 @@
 <bibliography xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="anonymous"
     xmlns:xlink="http://www.w3.org/1999/xlink">
   <title>Bibliography</title>
+<bibliography>
+  <title>Bibliography</title>
 
   <biblioentry id="jinterface-00">
     <authorgroup>
