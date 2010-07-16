@@ -25,8 +25,9 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
-import org.springframework.otp.erlang.OtpIOException;
+import org.springframework.erlang.OtpIOException;
 
 /**
  * @author Mark Pollack
@@ -46,7 +47,7 @@ public class RabbitBrokerAdminIntegrationTests {
 	}
 
 	@Test
-	@Ignore
+	//@Ignore
 	public void integrationTestsUserCrud() {
 		List<String> users = brokerAdmin.listUsers();
 		if (users.contains("joe")) {
@@ -60,6 +61,7 @@ public class RabbitBrokerAdminIntegrationTests {
 		}
 	}
 
+	
 	public void integrationTestListUsers() {
 		// OtpErlangObject result =
 		// adminTemplate.getErlangTemplate().executeRpc("rabbit_amqqueue",
@@ -79,7 +81,7 @@ public class RabbitBrokerAdminIntegrationTests {
 	}
 	
 	@Test
-	@Ignore
+	//
 	public void testStatusAndBrokerLifecycle() {
 		RabbitStatus status = brokerAdmin.getStatus();
 		assertBrokerAppRunning(status);		
@@ -94,7 +96,7 @@ public class RabbitBrokerAdminIntegrationTests {
 	}
 	
 	@Test
-	@Ignore("NEEDS RABBITMQ_HOME to be set.")
+	//@Ignore("NEEDS RABBITMQ_HOME to be set.")
 	public void testStartNode() {
 		try {
 			brokerAdmin.stopNode();
@@ -109,9 +111,10 @@ public class RabbitBrokerAdminIntegrationTests {
 	@Test
 	@Ignore("Caused by: java.io.IOException: Nameserver not responding on anakata.local when looking up rabbit")
 	public void testGetQueues() {
+		brokerAdmin.declareQueue(new Queue("test.queue"));
 		assertEquals("/", connectionFactory.getVirtualHost());
 		List<QueueInfo> queues = brokerAdmin.getQueues();
-		System.out.println(queues);
+		assertEquals("test.queue", queues.get(0).getName());
 	}
 
 	private void assertBrokerAppRunning(RabbitStatus status) {

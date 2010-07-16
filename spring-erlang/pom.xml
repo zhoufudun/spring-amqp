@@ -7,47 +7,21 @@
 		<version>1.0.0.BUILD-SNAPSHOT</version>
 		<relativePath>../spring-amqp-parent/pom.xml</relativePath>
 	</parent>
-	<artifactId>spring-amqp</artifactId>
+	<artifactId>spring-erlang</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AMQP Core</name>
+	<name>Spring Erlang Support</name>
 	<dependencies>
+
 		<!--  Spring -->
 		<dependency>
 			<groupId>org.springframework</groupId>
-			<artifactId>spring-oxm</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-test</artifactId>
+			<artifactId>spring-beans</artifactId>
 		</dependency>
 
 		<!-- Other -->
 		<dependency>
-			<groupId>javax.annotation</groupId>
-			<artifactId>jsr250-api</artifactId>
-			<optional>true</optional>
-		</dependency>
-		<dependency>
-			<groupId>cglib</groupId>
-			<artifactId>cglib-nodep</artifactId>
-			<optional>true</optional>
-		</dependency>
-		<dependency>
-			<groupId>org.mockito</groupId>
-			<artifactId>mockito-all</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.codehaus.jackson</groupId>
-			<artifactId>jackson-core-asl</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.codehaus.jackson</groupId>
-			<artifactId>jackson-mapper-asl</artifactId>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
 		</dependency>
 
 		<!-- Logging -->
@@ -88,6 +62,35 @@
 			</exclusions>
 			<scope>runtime</scope>
 		</dependency>
+		
+		<dependency>
+			<groupId>javax.annotation</groupId>
+			<artifactId>jsr250-api</artifactId>
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<groupId>cglib</groupId>
+			<artifactId>cglib-nodep</artifactId>
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-all</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.erlang.otp</groupId>
+			<artifactId>jinterface</artifactId>
+		</dependency>
+
 	</dependencies>
 	<build>
 		<plugins>

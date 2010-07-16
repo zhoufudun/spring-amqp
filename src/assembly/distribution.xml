@@ -51,8 +51,8 @@
 		<moduleSet>
 			<!-- adds module jars to the distribution archive under the 'dist' directory -->
 			<includes>
-				<include>org.springframework.amqp:spring-amqp-core</include>
-				<include>org.springframework.amqp:spring-otp</include>
+				<include>org.springframework.amqp:spring-amqp</include>
+				<include>org.springframework.amqp:spring-erlang</include>
 				<include>org.springframework.amqp:spring-rabbit</include>
 				<include>org.springframework.amqp:spring-rabbit-admin</include>
 			</includes>
@@ -66,8 +66,8 @@
 			<!-- adds module source jars to the distribution archive under the 'src' directory
 			     see pom.xml 'maven-source-plugin' declaration -->
 			<includes>
-				<include>org.springframework.amqp:spring-amqp-core</include>
-				<include>org.springframework.amqp:spring-otp</include>
+				<include>org.springframework.amqp:spring-amqp</include>
+				<include>org.springframework.amqp:spring-erlang</include>
 				<include>org.springframework.amqp:spring-rabbit</include>
 				<include>org.springframework.amqp:spring-rabbit-admin</include>
 			</includes>
