@@ -72,7 +72,7 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 	 * @param hostName the host name to connect to
 	 */
 	public CachingConnectionFactory(String hostName) {
-		this(new com.rabbitmq.client.ConnectionFactory(), hostName);
+		super(hostName);
 	}
 
 	/**
@@ -81,8 +81,8 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 	 * @param rabbitConnectionFactory the target ConnectionFactory
 	 * @param hostName the host name to connect to
 	 */
-	public CachingConnectionFactory(com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory, String hostName) {
-		super(rabbitConnectionFactory, hostName);
+	public CachingConnectionFactory(com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory) {
+		super(rabbitConnectionFactory);
 	} 
 
 
@@ -148,7 +148,7 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 	@Override
 	public String toString() {
 		return "CachingConnectionFactory [channelCacheSize=" + channelCacheSize
-				+ ", hostName=" + this.getHostName() + ", portNumber=" + this.getPortNumber()
+				+ ", host=" + this.getHost() + ", port=" + this.getPort()
 				+ ", active=" + active + "]";
 	}
 

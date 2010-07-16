@@ -64,7 +64,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	public RabbitBrokerAdmin(ConnectionFactory connectionFactory) {
 		this.virtualHost = connectionFactory.getVirtualHost();
 		this.rabbitTemplate = new RabbitTemplate(connectionFactory);
-		this.rabbitAdmin = new RabbitAdmin(rabbitTemplate);
+		this.rabbitAdmin = new RabbitAdmin(connectionFactory);
 		initializeDefaultErlangTemplate(rabbitTemplate);		
 	}
 	
@@ -115,6 +115,11 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	
 
 	// Queue Operations
+	
+	@ManagedOperation
+	public Queue declareQueue() {
+		return rabbitAdmin.declareQueue();
+	}
 	
 	@ManagedOperation
 	public void declareQueue(Queue queue) {
@@ -294,15 +299,15 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	public ErlangTemplate getErlangTemplate() {
 		return this.erlangTemplate;
 	}	
-	
+
 	protected void initializeDefaultErlangTemplate(RabbitTemplate rabbitTemplate) {	
-		String peerNodeName = "rabbit@" + rabbitTemplate.getConnectionFactory().getHostName();
+		String peerNodeName = "rabbit@" + rabbitTemplate.getConnectionFactory().getHost();
 		logger.debug("Creating jinterface connection with peerNodeName = [" + peerNodeName + "]");
 		SimpleConnectionFactory otpCf = new SimpleConnectionFactory("rabbit-spring-monitor", peerNodeName);
 		otpCf.afterPropertiesSet();
 		createErlangTemplate(otpCf);
 	}
-	
+
 	protected void createErlangTemplate(org.springframework.otp.erlang.connection.ConnectionFactory otpCf) {
 		erlangTemplate = new ErlangTemplate(otpCf);
 		erlangTemplate.setErlangConverter(new RabbitControlErlangConverter());

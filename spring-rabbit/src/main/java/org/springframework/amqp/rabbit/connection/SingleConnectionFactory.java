@@ -48,9 +48,7 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	private final String hostName;
-
-	private volatile int portNumber = RabbitUtils.DEFAULT_PORT;
+	private volatile int port = RabbitUtils.DEFAULT_PORT;
 
 	private final com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory;
 	
@@ -70,16 +68,18 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 	 * an exception.
 	 */
 	public SingleConnectionFactory() {
-		this.hostName = initializeDefaultHostName();
-		this.rabbitConnectionFactory = new com.rabbitmq.client.ConnectionFactory();		
+		this.rabbitConnectionFactory = new com.rabbitmq.client.ConnectionFactory();
+		this.rabbitConnectionFactory.setHost(this.getDefaultHostName());
 	}
 
 	/**
 	 * Create a new SingleConnectionFactory given a host name.
 	 * @param hostName the host name to connect to
 	 */
-	public SingleConnectionFactory(String hostName) {
-		this(new com.rabbitmq.client.ConnectionFactory(), hostName);
+	public SingleConnectionFactory(String hostname) {
+		Assert.hasText(hostname, "hostname is required");
+		this.rabbitConnectionFactory = new com.rabbitmq.client.ConnectionFactory();
+		this.rabbitConnectionFactory.setHost(hostname);
 	}
 
 	/**
@@ -87,12 +87,10 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 	 * @param rabbitConnectionFactory the target ConnectionFactory
 	 * @param hostName the host name to connect to
 	 */
-	public SingleConnectionFactory(com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory, String hostName) {
+	public SingleConnectionFactory(com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory) {
 		Assert.notNull(rabbitConnectionFactory, "Target ConnectionFactory must not be null");
-		Assert.hasText(hostName, "hostName must not be empty");
 		this.rabbitConnectionFactory = rabbitConnectionFactory;
-		this.hostName = hostName;
-	} 
+	}
 
 
 	public void setUsername(String username) {
@@ -103,16 +101,20 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 		this.rabbitConnectionFactory.setPassword(password);
 	}
 
-	public String getHostName() {
-		return hostName;
+	public String getHost() {
+		return this.rabbitConnectionFactory.getHost();
 	}
 
 	public String getVirtualHost() {
 		return rabbitConnectionFactory.getVirtualHost();
 	}
 
-	protected int getPortNumber() {
-		return this.portNumber;
+	public void setPort(int port) {
+		this.rabbitConnectionFactory.setPort(port);
+	}
+
+	protected int getPort() {
+		return this.port;
 	}
 
 	protected Channel getChannel(Connection connection) throws Exception {
@@ -199,7 +201,7 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 		//TODO configure ShutdownListener, investigate reconnection exceptions
 	}
 
-	protected String initializeDefaultHostName() {
+	private String getDefaultHostName() {
 		String temp;
 		try {
 			InetAddress localMachine = InetAddress.getLocalHost();
@@ -232,7 +234,7 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 
 	@Override
 	public String toString() {
-		return "SingleConnectionFactory [hostName=" + hostName + ", portNumber=" + portNumber + "]";
+		return "SingleConnectionFactory [host=" + rabbitConnectionFactory.getHost() + ", port=" + port + "]";
 	}
 
 
