@@ -193,7 +193,7 @@ project('spring-amqp-core') {
     }
 }
 
-project('spring-otp') {
+project('spring-erlang') {
     erlangLicense = true
 
     dependencies {
@@ -221,7 +221,7 @@ project('spring-rabbit-admin') {
 
     dependencies {
         compile project(':spring-amqp-core')
-        compile project(':spring-otp')
+        compile project(':spring-erlang')
         compile project(':spring-rabbit')
         compile "com.rabbitmq:amqp-client:$rabbitVersion"
         compile "org.springframework:spring-aop:$springVersion"
