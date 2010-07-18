@@ -48,16 +48,16 @@ task preprocessDocbookSources {
         docbookSrcDir = new File(projectDir, 'src/docbook')
         docbookBuildDir = new File(projectDir, 'build/docbook')
 
-        // copy all non-xml sources
+        // copy everything but index.xml
         copy {
             into(docbookBuildDir)
-            from(docbookSrcDir) { exclude '**/*.xml' }
+            from(docbookSrcDir) { exclude '**/index.xml' }
         }
-        // copy all xml sources, and expand ${...} variables along the way
-        // e.g.: ${version} needs to be replaced in the first page of the
+        // copy index.xml and expand ${...} variables along the way
+        // e.g.: ${version} needs to be replaced in the header
         copy {
             into(docbookBuildDir)
-            from(docbookSrcDir) { include '**/*.xml' }
+            from(docbookSrcDir) { include '**/index.xml' }
             expand(version: "$version")
         }
     }

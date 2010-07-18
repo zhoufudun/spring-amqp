@@ -16,6 +16,20 @@
 	</modules>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<!-- dist.* properties are used by the antrun tasks below -->
+		<dist.id>spring-amqp</dist.id>
+		<dist.name>Spring AMQP</dist.name>
+		<dist.key>AMQP</dist.key>
+		<dist.version>${project.version}</dist.version>
+		<dist.releaseType>snapshot</dist.releaseType>
+		<dist.finalName>${dist.id}-${dist.version}</dist.finalName>
+		<dist.fileName>${dist.finalName}.zip</dist.fileName>
+		<dist.filePath>target/${dist.fileName}</dist.filePath>
+		<dist.bucketName>dist.springframework.org</dist.bucketName>
+		<!-- these properties should be in ~/.m2/settings.xml
+		<dist.accessKey>s3 access key</dist.accessKey>
+		<dist.secretKey>s3 secret key</dist.secretKey>
+		-->
 	</properties>
 	<profiles>
 		<profile>
@@ -149,9 +163,20 @@
 							<groups>
 								<group>
 									<title>Spring AMQP</title>
-									<packages>org.springframework.amqp.core</packages>
+									<packages>org.springframework.amqp:org.springframework.amqp.*</packages>
 								</group>
-								<!-- TODO: fill in other groups -->
+								<group>
+									<title>Spring Rabbit</title>
+									<packages>org.springframework.amqp.rabbit.*</packages>
+								</group>
+								<group>
+									<title>Spring Rabbit Admin</title>
+									<packages>org.springframework.amqp.rabbit.admin:org.springframework.amqp.rabbit.test</packages>
+								</group>
+								<group>
+									<title>Spring Erlang</title>
+									<packages>org.springframework.erlang:org.springframework.erlang.*:org.springframework.util.exec</packages>
+								</group>
 							</groups>
 							<excludePackageNames>org.springframework.amqp.samples</excludePackageNames>
 							<links>
@@ -168,27 +193,62 @@
 				<artifactId>maven-assembly-plugin</artifactId>
 				<version>2.2-beta-5</version>
 				<inherited>false</inherited>
-					<executions>
-						<execution>
-							<id>distribution</id>
-							<goals>
-								<goal>single</goal>
-							</goals>
-							<phase>package</phase>
-							<configuration>
-								<descriptors>
-									<descriptor>${project.basedir}/src/assembly/distribution.xml</descriptor>
-								</descriptors>
-								<appendAssemblyId>false</appendAssemblyId>
-							</configuration>
-						</execution>
-					</executions>
+				<executions>
+					<execution>
+						<id>distribution</id>
+						<goals>
+							<goal>single</goal>
+						</goals>
+						<phase>package</phase>
+						<configuration>
+							<descriptors>
+								<descriptor>${project.basedir}/src/assembly/distribution.xml</descriptor>
+							</descriptors>
+							<appendAssemblyId>false</appendAssemblyId>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>1.4</version>
+				<executions>
+					<execution>
+						<id>upload-dist</id>
+						<phase>deploy</phase>
+						<configuration>
+							<tasks>
+								<ant antfile="${basedir}/src/ant/upload-dist.xml">
+									<target name="upload-dist"/>
+								</ant>
+							</tasks>
+						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+				</executions>
+				<dependencies>
+					<dependency>
+						<groupId>org.springframework.build</groupId>
+						<artifactId>org.springframework.build.aws.ant</artifactId>
+						<version>3.0.5.RELEASE</version>
+					</dependency>
+					<dependency>
+						<groupId>net.java.dev.jets3t</groupId>
+						<artifactId>jets3t</artifactId>
+						<version>0.7.2</version>
+					</dependency>
+				</dependencies>
 			</plugin>
 		</plugins>
+		<!-- the name of this project is 'spring-amqp-dist';
+			 make sure the zip file is just 'spring-amqp'. -->
+		<finalName>${dist.finalName}</finalName>
 	</build>
 	<repositories>
 		<repository>
-			<!-- necessary for org.springframework.build.aws.maven dependency -->
 			<id>repository.springframework.maven.release</id>
 			<name>Spring Framework Maven Release Repository</name>
 			<url>http://maven.springframework.org/release</url>
@@ -197,6 +257,12 @@
 			<id>repository.springframework.maven.milestone</id>
 			<name>Spring Framework Maven Milestone Repository</name>
 			<url>http://maven.springframework.org/milestone</url>
+		</repository>
+		<repository>
+			<!-- necessary for org.springframework.build.aws.maven dependency -->
+			<id>repository.source.maven.release</id>
+			<name>SpringSource Maven Release Repository</name>
+			<url>http://repository.springsource.com/maven/bundles/release</url>
 		</repository>
 	</repositories>
 </project>

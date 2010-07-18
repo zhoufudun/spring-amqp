@@ -1,10 +1,22 @@
+# maven
 target
+.ant-targets-build.xml
+src/ant/.ant-targets-upload-dist.xml
+
+# gradle
 build
 .gradle
-.classpath.old
-.springBeans
+
+# vim
 *.swp
-.classpath
-.project
+
+# idea
 *.iml
 *.iws
+
+# eclipse
+.classpath
+.classpath.old
+.settings
+.springBeans
+.project

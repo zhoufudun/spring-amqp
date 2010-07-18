@@ -47,7 +47,7 @@ public class RabbitBrokerAdminIntegrationTests {
 	}
 
 	@Test
-	//@Ignore
+	@Ignore("Caused by: OtpIOException: failed to connect from 'rabbit-spring-monitor' to peer node 'localhost'")
 	public void integrationTestsUserCrud() {
 		List<String> users = brokerAdmin.listUsers();
 		if (users.contains("joe")) {
@@ -61,7 +61,7 @@ public class RabbitBrokerAdminIntegrationTests {
 		}
 	}
 
-	
+
 	public void integrationTestListUsers() {
 		// OtpErlangObject result =
 		// adminTemplate.getErlangTemplate().executeRpc("rabbit_amqqueue",
@@ -79,24 +79,24 @@ public class RabbitBrokerAdminIntegrationTests {
 		// System.out.println(result.getClass());
 		// System.out.println(result);
 	}
-	
+
 	@Test
-	//
+	@Ignore("Caused by: OtpIOException: failed to connect from 'rabbit-spring-monitor' to peer node 'localhost'")
 	public void testStatusAndBrokerLifecycle() {
 		RabbitStatus status = brokerAdmin.getStatus();
-		assertBrokerAppRunning(status);		
-		
+		assertBrokerAppRunning(status);
+
 		brokerAdmin.stopBrokerApplication();
 		status = brokerAdmin.getStatus();
 		assertEquals(0, status.getRunningNodes().size());
-		
+
 		brokerAdmin.startBrokerApplication();
 		status = brokerAdmin.getStatus();
-		assertBrokerAppRunning(status);				
+		assertBrokerAppRunning(status);
 	}
-	
+
 	@Test
-	//@Ignore("NEEDS RABBITMQ_HOME to be set.")
+	@Ignore("NEEDS RABBITMQ_HOME to be set.")
 	public void testStartNode() {
 		try {
 			brokerAdmin.stopNode();
@@ -107,7 +107,7 @@ public class RabbitBrokerAdminIntegrationTests {
 		assertEquals(1,1);
 		brokerAdmin.stopNode();
 	}
-	
+
 	@Test
 	@Ignore("Caused by: java.io.IOException: Nameserver not responding on anakata.local when looking up rabbit")
 	public void testGetQueues() {
