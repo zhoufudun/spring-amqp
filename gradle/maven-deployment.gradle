@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import org.springframework.build.Version.ReleaseType;
-
 // -----------------------------------------------------------------------------
 // Tasks related to deploying Maven artifacts.
 //
@@ -27,14 +25,8 @@ import org.springframework.build.Version.ReleaseType;
 // these properties ('s3AccessKey', etc) should be defined in
 // 'gradle.properties' in $HOME/.gradle/gradle.properties
 gradle.taskGraph.whenReady {graph ->
-    if (graph.hasTask(project.path + ':uploadArchives')) {
-        if (version.releaseType == ReleaseType.RELEASE) {
-            mavenSyncRepoDir
-        } else {
-            s3AccessKey
-            s3SecretAccessKey
-        }
-    }
+    def requiredProps = version.releaseType == 'RELEASE' ? ['mavenSyncRepoDir'] : ['s3AccessKey', 's3SecretAccessKey']
+    checkForProps(graph: graph, taskPath: project.path + ':uploadArchives', requiredProps: requiredProps)
 }
 
 
@@ -76,14 +68,13 @@ artifacts {
  *
  * @author cbeams
  * @see 'mavenSyncRepoDir' in gradle.properties
- * @see org.springframework.build.Version#getReleaseType
  * @see `gradle install` for deploying artifacts to the local .m2 cache
  * @see http://maven.apache.org/guides/mini/guide-central-repository-upload.html
  */
 uploadArchives {
     description = "Does a maven deploy of archives artifacts to " // url appended below
 
-    def releaseRepositoryUrl = "file://${mavenSyncRepoDir}"
+    def releaseRepositoryUrl = "file://${project.properties.mavenSyncRepoDir}"
     def milestoneRepositoryUrl = 's3://maven.springframework.org/milestone'
     def snapshotRepositoryUrl = 's3://maven.springframework.org/snapshot'
 
@@ -93,20 +84,22 @@ uploadArchives {
         deployerJars "org.springframework.build.aws:org.springframework.build.aws.maven:3.0.0.RELEASE"
     }
 
+    taskGroup = 'buildmaster'
+
     repositories.mavenDeployer {
         switch (version.releaseType) {
-            case ReleaseType.RELEASE:
+            case 'RELEASE':
                 repository(url: releaseRepositoryUrl)
                 description += releaseRepositoryUrl
                 break;
 
-            case ReleaseType.MILESTONE:
+            case 'MILESTONE':
                 description += milestoneRepositoryUrl
                 // fall through and pick up config below
 
-            case ReleaseType.SNAPSHOT:
+            case 'SNAPSHOT':
                 description += snapshotRepositoryUrl
-                s3credentials = [userName: s3AccessKey, passphrase: s3SecretAccessKey]
+                s3credentials = [userName: project.properties.s3AccessKey, passphrase: project.properties.s3SecretAccessKey]
                 configuration = configurations.deployerJars
                 repository(url: milestoneRepositoryUrl) {
                     authentication(s3credentials)

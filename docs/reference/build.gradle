@@ -25,6 +25,33 @@
 // @see http://github.com/gradle/gradle-jdocbook
 // -----------------------------------------------------------------------------
 
+buildscript {
+    repositories {
+        mavenCentral()
+        mavenRepo name: 'Shibboleth Repo', urls: 'http://shibboleth.internet2.edu/downloads/maven2'
+    }
+    dependencies {
+        def fopDeps = ['org.apache.xmlgraphics:fop:0.95-1@jar',
+                'org.apache.xmlgraphics:xmlgraphics-commons:1.3',
+                'org.apache.xmlgraphics:batik-bridge:1.7@jar',
+                'org.apache.xmlgraphics:batik-util:1.7@jar',
+                'org.apache.xmlgraphics:batik-css:1.7@jar',
+                'org.apache.xmlgraphics:batik-dom:1.7',
+                'org.apache.xmlgraphics:batik-svg-dom:1.7@jar',
+                'org.apache.avalon.framework:avalon-framework-api:4.3.1']
+
+        classpath files("${rootDir}/gradle/docbook-1.0.jar"), 
+                'org.apache.xerces:resolver:2.9.1',
+                'saxon:saxon:6.5.3',
+                'org.apache.xerces:xercesImpl:2.9.1',
+                fopDeps,
+                'net.sf.xslthl:xslthl:2.0.1',
+                'net.sf.docbook:docbook-xsl:1.75.2:resources@zip'
+
+    }
+
+}
+
 apply plugin: 'base'
 apply plugin: 'docbook'
 
@@ -63,7 +90,6 @@ task preprocessDocbookSources {
     }
 }
 
-
 // -----------------------------------------------------------------------------
 // Configure the three docbook* tasks that are added to the project by the
 // 'docbook' plugin.
@@ -76,13 +102,6 @@ docbookHtmlSingle.stylesheet = new File(projectDir, 'src/xsl/html-single-custom.
 docbookPdf.stylesheet = new File(projectDir, 'src/xsl/pdf-custom.xsl')
 def imagesDir = new File(projectDir, 'src/docbook/images');
 docbookPdf.admonGraphicsPath = "${imagesDir}/"
-
-
-configurations { scpAntTask }
-dependencies {
-    scpAntTask("org.apache.ant:ant-jsch:1.8.1")
-}
-
 
 /**
  *
@@ -107,16 +126,6 @@ docsSpec = copySpec {
 }
 
 
-/**
- * Build HTML and PDF reference documentation from docbook sources.
- *
- * @author cbeams
- */
-task build (dependsOn: assemble) {
-    //description = 'Builds reference documentation in html, html-single and PDF formats.'
-}
-
-
 task docsArchive(type: Tar, dependsOn: [docbookHtml, docbookHtmlSingle, docbookPdf]) {
     description = "Create a tbz2 archive of HTML and PDF reference documentation."
 
@@ -126,52 +135,4 @@ task docsArchive(type: Tar, dependsOn: [docbookHtml, docbookHtmlSingle, docbookP
     with docsSpec
 }
 
-configurations { archives }
-artifacts { archives docsArchive }
-
-if (role == 'buildmaster') {
-    uploadArchives {
-        def docUrl = "http://${sshHost}/${rootProject.name}/docs/${version.wildcardValue}/reference"
-        def remoteDocsDir = "${remoteSiteDir}/docs/${version.wildcardValue}"
-        def fqRemoteDir = "${sshUsername}@${sshHost}:${remoteDocsDir}"
-
-        description = "Uploads HTML and PDF reference documentation to ${docUrl}"
-
-        uploadDescriptor = false
-
-        repositories {
-            add(new org.apache.ivy.plugins.resolver.SshResolver()) {
-                name = sshHost // used for debugging
-                host = sshHost
-                user = sshUsername
-                keyFile = sshPrivateKey as File
-                addArtifactPattern "${remoteDocsDir}/${docsArchive.archiveName}"
-            }
-        }
-
-        configurations { scpAntTask }
-        dependencies { scpAntTask 'org.apache.ant:ant-jsch:1.8.1' }
-
-        doFirst {
-            println "Uploading: ${docsArchive.archivePath} to ${fqRemoteDir}"
-        }
-
-        doLast {
-            project.ant {
-                taskdef(name: 'sshexec',
-                    classname: 'org.apache.tools.ant.taskdefs.optional.ssh.SSHExec',
-                    classpath: configurations.scpAntTask.asPath)
-
-                // copy the archive, unpack it, then delete it
-                def unpackCommand = "cd ${remoteDocsDir} && tar -xjf ${docsArchive.archiveName}"
-                def deleteCommand = "rm ${remoteDocsDir}/${docsArchive.archiveName}"
-
-                println "sshexec ${unpackCommand}"
-                sshexec(host: sshHost, username: sshUsername, keyfile: sshPrivateKey, command: unpackCommand)
-                println "sshexec ${deleteCommand}"
-                sshexec(host: sshHost, username: sshUsername, keyfile: sshPrivateKey, command: deleteCommand)
-                println "UPLOAD SUCCESSFUL - validate by visiting ${docUrl}"
-            }
-        }
-    }
-}
+apply from: '../uploadDocs.gradle'

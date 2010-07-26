@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-import org.springframework.build.Version.ReleaseType
-
 /**
  * Issue a snapshot dependency report across all Java projects. Detects not
  * only direct snapshot dependencies, but transitive as well.
@@ -73,9 +71,10 @@ task snapshotDependencyReport {
  */
 task snapshotDependencyCheck(dependsOn: snapshotDependencyReport) {
     description = 'Aborts the build if any Java project has snapshot dependencies.'
+    taskGroup = 'verification'
 
     // bind to build lifecycle if we're a non-snapshot release
-    if (version.releaseType != ReleaseType.SNAPSHOT) {
+    if (version.releaseType != 'SNAPSHOT') {
         check.dependsOn snapshotDependencyCheck
     }
 
@@ -88,5 +87,4 @@ task snapshotDependencyCheck(dependsOn: snapshotDependencyReport) {
             "aborting '${name}' task due to snapshot dependencies. "
             + "supply -PignoreSnapshotDependencies to override")
     }
-
 }

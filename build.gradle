@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import org.springframework.build.Version
-import org.springframework.build.Version.ReleaseType
 
 // -----------------------------------------------------------------------------
 // Main gradle build file for Spring AMQP
@@ -35,6 +33,9 @@ import org.springframework.build.Version.ReleaseType
 //
 // @see settings.gradle for list of all subprojects
 // -----------------------------------------------------------------------------
+
+apply from: "$rootDir/gradle/version.gradle"
+
 allprojects {
     // group will translate to groupId during pom generation and deployment
     group = 'org.springframework.amqp'
@@ -44,7 +45,7 @@ allprojects {
     // milestone or release.
     // @see org.springframework.build.Version under buildSrc/ for more info
     // @see gradle.properties for the declaration of this property.
-    version = new Version(springAmqpVersion)
+    version = createVersion(springAmqpVersion)
 
     // defoult set of maven repositories to be used when resolving dependencies
     repositories {
@@ -108,7 +109,7 @@ configure(javaprojects) {
     apply plugin: 'java' // tasks for conventional java lifecycle
     apply plugin: 'maven' // `gradle install` to push jars to local .m2 cache
     apply plugin: 'eclipse' // `gradle eclipse` to generate .classpath/.project
-    apply plugin: 'org.gradle.idea' // `gradle idea` to generate .ipr/.iml
+    apply plugin: 'idea' // `gradle idea` to generate .ipr/.iml
 
     springVersion = '3.0.3.RELEASE'
     rabbitVersion = '1.8.1'
@@ -118,6 +119,10 @@ configure(javaprojects) {
     // dependencies that are common across all java projects
     dependencies {
         testCompile 'junit:junit:4.7'
+    }
+
+    ideaModule {
+        downloadJavadoc = false
     }
 }
 
@@ -299,19 +304,14 @@ apply from: "${rootDir}/gradle/checks.gradle"
 
 
 // -----------------------------------------------------------------------------
-// Conditionally import tasks related to releasing and managing the project
+// Import tasks related to releasing and managing the project
 // depending on the role played by the current user.
 //
 // @see gradle.properties for more information on roles
 // -----------------------------------------------------------------------------
-if (project.properties['role'] == 'buildmaster') {
-
-    // add management tasks like `wrapper` for generating the gradlew* scripts
-    apply from: "$rootDir/gradle/wrapper.gradle"
-
-    // if role is 'buildmaster', expose tasks for each core project
-    // allowing for deploying artifacts to remote m2 repositories
-    configure(coreprojects) {
-        apply from: "$rootDir/gradle/maven-deployment.gradle"
-    }
+// add management tasks like `wrapper` for generating the gradlew* scripts
+apply from: "$rootDir/gradle/wrapper.gradle"
+configure(coreprojects) {
+    apply from: "$rootDir/gradle/maven-deployment.gradle"
 }
+

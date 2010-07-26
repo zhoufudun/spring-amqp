@@ -28,4 +28,5 @@ task wrapper(type: Wrapper) {
     // place jar file and properties into a
     // subdirectory to avoid root dir clutter
     jarPath = 'gradle/wrapper'
+    taskGroup = 'buildmaster'
 }

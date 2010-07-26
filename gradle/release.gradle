@@ -27,9 +27,13 @@ project.subprojects.each { project ->
     evaluationDependsOn project.path
 }
 
-task check()
+task check {
+    taskGroup = 'verification'
+}
 
-task build(dependsOn: [check, assemble])
+task build(dependsOn: [check, assemble]) {
+    taskGroup = 'build'
+}
 
 /**
  * Build the distribution zip file.
@@ -87,48 +91,48 @@ task distArchive(type: Zip) {
     // this will write out the file at ${checksumPath}
     doLast {
         ant.checksum(file: archivePath, algorithm: 'SHA1', fileext: '.sha1')
-        assert file(checksumPath).isFile() : "${checksumPath} was not created"
+        assert file(checksumPath).isFile(): "${checksumPath} was not created"
     }
 }
 
+/**
+ * Upload the distribution zip file.
+ *
+ * @author ltaylor
+ * @author cbeams
+ */
+task uploadArchives(overwrite: true, dependsOn: distArchive) { // base plugin adds one we need to overwrite
+    description = 'Uploads the distribution zip file.'
 
-if (role == 'buildmaster') {
-    /**
-     * Upload the distribution zip file.
-     *
-     * @author ltaylor
-     * @author cbeams
-     */
-    task uploadArchives(overwrite: true, dependsOn: distArchive) { // base plugin adds one we need to overwrite
-        description = 'Uploads the distribution zip file.'
+    configurations { antlibs }
+    dependencies {
+        antlibs "org.springframework.build:org.springframework.build.aws.ant:3.0.3.RELEASE",
+                "net.java.dev.jets3t:jets3t:0.6.1"
+    }
 
-        configurations { antlibs }
-        dependencies {
-            antlibs "org.springframework.build:org.springframework.build.aws.ant:3.0.3.RELEASE",
-                    "net.java.dev.jets3t:jets3t:0.6.1"
-        }
+    def releaseType = version.releaseType.toString().toLowerCase()
 
-        def releaseType = version.releaseType.toString().toLowerCase()
+    taskGroup = 'buildmaster'
 
-        doLast() {
-            println "Uploading: ${distArchive.archivePath} to s3"
-            project.ant {
-                taskdef(resource: 'org/springframework/build/aws/ant/antlib.xml',
-                        classpath: configurations.antlibs.asPath)
-                s3(accessKey: s3AccessKey, secretKey: s3SecretAccessKey) {
-                    upload(bucketName: 'dist.springframework.org', file: distArchive.archivePath,
-                            toFile: releaseType + "/AMQP/${distArchive.archiveName}", publicRead: 'true') {
-                        metadata(name: 'project.name', value: 'Spring AMQP')
-                        metadata(name: 'release.type', value: releaseType)
-                        metadata(name: 'bundle.version', value: version)
-                        metadata(name: 'package.file.name', value: distArchive.archiveName)
-                    }
-                    upload(bucketName: 'dist.springframework.org', file: "${distArchive.archivePath}.sha1",
-                            toFile: releaseType + "/AMQP/${distArchive.archiveName}.sha1", publicRead: 'true')
+    doLast() {
+        println "Uploading: ${distArchive.archivePath} to s3"
+        project.ant {
+            taskdef(resource: 'org/springframework/build/aws/ant/antlib.xml',
+                    classpath: configurations.antlibs.asPath)
+            s3(accessKey: project.properties.s3AccessKey, secretKey: s3SecretAccessKey) {
+                upload(bucketName: 'dist.springframework.org', file: distArchive.archivePath,
+                        toFile: releaseType + "/AMQP/${distArchive.archiveName}", publicRead: 'true') {
+                    metadata(name: 'project.name', value: 'Spring AMQP')
+                    metadata(name: 'release.type', value: releaseType)
+                    metadata(name: 'bundle.version', value: version)
+                    metadata(name: 'package.file.name', value: distArchive.archiveName)
                 }
+                upload(bucketName: 'dist.springframework.org', file: "${distArchive.archivePath}.sha1",
+                        toFile: releaseType + "/AMQP/${distArchive.archiveName}.sha1", publicRead: 'true')
             }
         }
     }
 }
+
 
 
