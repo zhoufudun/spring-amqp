@@ -49,7 +49,6 @@ allprojects {
 
     // defoult set of maven repositories to be used when resolving dependencies
     repositories {
-        mavenRepo urls: "file://" + System.properties['user.home'] + "/.m2/repository"
         mavenCentral()
         mavenRepo urls: 'http://repository.springsource.com/maven/bundles/milestone'
         mavenRepo urls: 'http://maven.springframework.org/snapshot/'
@@ -140,6 +139,7 @@ configure(coreprojects) {
     // all core projects should be OSGi-compliant bundles
     // add the bundlor task to ensure proper manifests
     apply from: "$rootDir/gradle/bundlor.gradle"
+    apply from: "$rootDir/gradle/maven-deployment.gradle"
 
     // dependencies common to all core projects
     dependencies {
@@ -297,7 +297,7 @@ project(':spring-amqp-samples:stocks') {
 apply plugin: 'base'
 
 // add tasks like 'distArchive'
-apply from: "$rootDir/gradle/release.gradle"
+apply from: "$rootDir/gradle/dist.gradle"
 
 // add tasks like 'snapshotDependencyCheck'
 apply from: "${rootDir}/gradle/checks.gradle"
@@ -311,7 +311,3 @@ apply from: "${rootDir}/gradle/checks.gradle"
 // -----------------------------------------------------------------------------
 // add management tasks like `wrapper` for generating the gradlew* scripts
 apply from: "$rootDir/gradle/wrapper.gradle"
-configure(coreprojects) {
-    apply from: "$rootDir/gradle/maven-deployment.gradle"
-}
-

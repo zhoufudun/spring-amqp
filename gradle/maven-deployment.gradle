@@ -69,6 +69,7 @@ artifacts {
  * @see http://maven.apache.org/guides/mini/guide-central-repository-upload.html
  */
 uploadArchives {
+    taskGroup = 'Buildmaster'
     description = "Does a maven deploy of archives artifacts to " // url appended below
 
     def releaseRepositoryUrl = "file://${project.properties.mavenSyncRepoDir}"
@@ -80,8 +81,6 @@ uploadArchives {
     dependencies {
         deployerJars "org.springframework.build.aws:org.springframework.build.aws.maven:3.0.0.RELEASE"
     }
-
-    taskGroup = 'buildmaster'
 
     repositories.mavenDeployer {
         switch (version.releaseType) {

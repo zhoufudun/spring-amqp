@@ -57,8 +57,8 @@ gradle.taskGraph.whenReady { graph ->
             def missingProps = args.requiredProps.findAll { prop ->
                 !project.hasProperty(prop)
             }
-            if (true) {
-                throw new GradleException("For executing the $args.taskPath task you need to set all $missingProps properties")
+            if (missingProps) {
+                throw new GradleException("For executing the ${args.taskPath} task you need to set all ${missingProps} properties")
             }
         }
     }
