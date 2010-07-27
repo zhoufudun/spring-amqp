@@ -98,7 +98,7 @@ public class Docbook extends DefaultTask {
     String admonGraphicsPath;
 
     @InputDirectory
-    File sourceDirectory = new File(project.getProjectDir(), "build/docbook");
+    File sourceDirectory = new File(project.getProjectDir(), "build/reference-work");
 
     @Input
     String sourceFileName;
@@ -107,7 +107,7 @@ public class Docbook extends DefaultTask {
     File stylesheet;
 
     @OutputDirectory
-    File docsDir = new File(project.getBuildDir(), "docs");
+    File docsDir = new File(project.getBuildDir(), "reference");
 
     @InputFiles
     Configuration classpath
