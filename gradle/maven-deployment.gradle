@@ -24,11 +24,8 @@
 // check that upload-related properties are defined and fail early if not
 // these properties ('s3AccessKey', etc) should be defined in
 // 'gradle.properties' in $HOME/.gradle/gradle.properties
-gradle.taskGraph.whenReady {graph ->
-    def requiredProps = version.releaseType == 'RELEASE' ? ['mavenSyncRepoDir'] : ['s3AccessKey', 's3SecretAccessKey']
-    checkForProps(graph: graph, taskPath: project.path + ':uploadArchives', requiredProps: requiredProps)
-}
-
+def requiredProps = version.releaseType == 'RELEASE' ? ['mavenSyncRepoDir'] : ['s3AccessKey', 's3SecretAccessKey']
+checkForProps(taskPath: project.path + ':uploadArchives', requiredProps: requiredProps)
 
 /**
  * Builds a source jar artifact for all main java sources.

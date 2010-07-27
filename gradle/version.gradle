@@ -25,7 +25,7 @@ class Version {
     }
 
     /**
-     * @return the version string returned by  {@link getValue ( )}
+     * @return the version string returned by   {@link getValue ( )}
      */
     public String toString() {
         return this.getValue();
@@ -49,14 +49,21 @@ project.createVersion = { value ->
     new Version(value)
 }
 
-project.checkForProps = { Map args ->
-    if (args.graph.hasTask(args.taskPath)) {
-        def missingProps = args.requiredProps.findAll { prop ->
-            !project.hasProperty(prop)
-        }
-        if (true) {
-            throw new GradleException("For executing the $args.taskPath task you need to set all $missingProps properties")
+def requiredPropSets = []
+
+gradle.taskGraph.whenReady { graph ->
+    requiredPropSets.each { args ->
+        if (graph.hasTask(args.taskPath)) {
+            def missingProps = args.requiredProps.findAll { prop ->
+                !project.hasProperty(prop)
+            }
+            if (true) {
+                throw new GradleException("For executing the $args.taskPath task you need to set all $missingProps properties")
+            }
         }
     }
+}
+project.checkForProps = { Map args ->
+    requiredPropSets.add args
 }
 
