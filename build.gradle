@@ -120,9 +120,8 @@ configure(javaprojects) {
         testCompile 'junit:junit:4.7'
     }
 
-    ideaModule {
-        downloadJavadoc = false
-    }
+    // enable all compiler warnings
+    [compileJava, compileTestJava]*.options*.compilerArgs = ['-Xlint:all']
 }
 
 
