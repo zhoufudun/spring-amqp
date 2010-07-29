@@ -44,6 +44,7 @@ task build(dependsOn: assemble) {
     tmpDir = file("${buildDir}/api-work")
     optionsFile = file("${tmpDir}/apidocs/javadoc.options")
     options.stylesheetFile = file("${srcDir}/spring-javadoc.css")
+    options.links = ['http://static.springframework.org/spring/docs/3.0.3.RELEASE/javadoc-api']
     options.overview = "${srcDir}/overview.html"
     options.docFilesSubDirs = true
     title = "Spring AMQP ${version} API"
