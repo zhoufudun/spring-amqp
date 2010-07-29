@@ -204,7 +204,7 @@ public abstract class AbstractRabbitListeningContainer extends RabbitAccessor im
 	/**
 	 * Start the shared Connection, if any, and notify all invoker tasks.
 	 * @throws Exception  if thrown by Rabbit API methods
-	 * @see #startSharedConnection
+	 * @see #establishSharedConnection
 	 */
 	protected void doStart() throws Exception {
 		// Lazily establish a shared Connection, if necessary.
