@@ -310,7 +310,6 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	 * <code>onMessage</code> method.
 	 * @param listener the Rabbit MessageListener to invoke
 	 * @param message the received Rabbit Message
-	 * @throws Exception if thrown by RAbbit API methods
 	 * @see org.springframework.amqp.core.MessageListener#onMessage
 	 */
 	protected void doInvokeListener(MessageListener listener, Message message) {
@@ -323,7 +322,6 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	 * Perform a commit or message acknowledgement, as appropriate.
 	 * @param channel the Rabbit channel to commit
 	 * @param message the Message to acknowledge
-	 * @throws Exception in case of commit failure
 	 */
 	protected void commitIfNecessary(Channel channel, Message message)  {
 		

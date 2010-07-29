@@ -341,8 +341,8 @@ public abstract class AbstractRabbitListeningContainer extends RabbitAccessor im
 	}
 
 	/**
-	 * Stop the shared Connection.
-	 * @throws Exception if thrown by Rabbit API methods
+	 * Stop the shared Connection, logging any exception thrown by
+	 * Rabbit API methods.
 	 */
 	protected void stopSharedConnection() {		
 		if (this.sharedConnection != null) {
