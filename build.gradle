@@ -168,7 +168,7 @@ configure(sampleprojects) {
 
     // dependencies common ta all sample projects
     dependencies {
-        compile project(':spring-amqp-core')
+        compile project(':spring-amqp')
         compile project(':spring-rabbit')
         compile project(':spring-rabbit-admin')
         compile "com.rabbitmq:amqp-client:$rabbitVersion"
@@ -189,7 +189,7 @@ configure(sampleprojects) {
 //
 // @see configure(javaprojects) above for general config
 // -----------------------------------------------------------------------------
-project('spring-amqp-core') {
+project('spring-amqp') {
     dependencies {
         compile "org.springframework:spring-core:$springVersion"
         compile "org.springframework:spring-oxm:$springVersion"
@@ -208,7 +208,7 @@ project('spring-erlang') {
 
 project('spring-rabbit') {
     dependencies {
-        compile project(':spring-amqp-core')
+        compile project(':spring-amqp')
         compile "com.rabbitmq:amqp-client:$rabbitVersion"
         compile "org.springframework:spring-core:$springVersion"
         compile "org.springframework:spring-beans:$springVersion"
@@ -224,7 +224,7 @@ project('spring-rabbit-admin') {
     erlangLicense = true
 
     dependencies {
-        compile project(':spring-amqp-core')
+        compile project(':spring-amqp')
         compile project(':spring-erlang')
         compile project(':spring-rabbit')
         compile "com.rabbitmq:amqp-client:$rabbitVersion"

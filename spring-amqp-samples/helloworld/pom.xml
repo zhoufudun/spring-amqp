@@ -40,13 +40,13 @@
     </dependency>
     <dependency>
       <groupId>org.springframework.amqp</groupId>
-      <artifactId>spring-amqp-core</artifactId>
+      <artifactId>spring-rabbit-admin</artifactId>
       <version>1.0.0.BUILD-SNAPSHOT</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.springframework.amqp</groupId>
-      <artifactId>spring-rabbit-admin</artifactId>
+      <artifactId>spring-amqp</artifactId>
       <version>1.0.0.BUILD-SNAPSHOT</version>
       <scope>compile</scope>
     </dependency>

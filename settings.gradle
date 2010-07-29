@@ -20,9 +20,17 @@
  * @see http://www.gradle.org/0.9-preview-3/docs/userguide/userguide_single.html#javaMultiProject
  */
 include 'docs',
-        'spring-amqp-core',
+        'spring-amqp',
         'spring-erlang',
         'spring-rabbit',
         'spring-rabbit-admin',
         'spring-amqp-samples:helloworld',
         'spring-amqp-samples:stocks'
+
+// In commit 58de044, Mark changed the Maven pom artifactId of the
+// spring-amqp-core module to 'spring-amqp', without changing the
+// name of the directory. This statement reflects that change, but
+// is not actually the most ideal way to do it. See the following
+// comment on GRADLE-443 to see how we'll be able to support this
+// better in Gradle 1.0: http://bit.ly/bRCmBn
+project(':spring-amqp').projectDir = new File(settingsDir, 'spring-amqp-core')
