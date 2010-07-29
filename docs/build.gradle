@@ -19,7 +19,7 @@ apply from: "$rootDir/gradle/docbook.gradle"
 
 
 task build(dependsOn: assemble) {
-    taskGroup = 'Build'
+    group = 'Build'
     description = 'Builds reference and API documentation and archives'
 }
 
@@ -34,7 +34,7 @@ task build(dependsOn: assemble) {
  * @see http://gradle.org/0.9-preview-3/docs/javadoc/org/gradle/api/tasks/javadoc/Javadoc.html
  */
  task api(type: Javadoc) {
-    taskGroup = 'Documentation'
+    group = 'Documentation'
     description = "Builds aggregated JavaDoc HTML for all core project classes."
 
     // this task is a bit ugly to configure. it was a user contribution, and
@@ -111,7 +111,7 @@ task preprocessDocbookSources {
 // 'docbook' plugin.
 // -----------------------------------------------------------------------------
 task reference(dependsOn: [docbookHtml, docbookHtmlSingle, docbookPdf]) {
-    taskGroup = 'Documentation'
+    group = 'Documentation'
     description = 'Generates all HTML and PDF reference documentation.'
 }
 
@@ -155,7 +155,7 @@ docsSpec = copySpec {
 }
 
 task archive(type: Zip, dependsOn: [api, reference]) {
-    taskGroup = "Documentation"
+    group = "Documentation"
     description = "Create a zip archive of reference and API documentation."
 
     baseName = rootProject.name + '-docs'
@@ -185,11 +185,10 @@ uploadArchives {
     def remoteDocsDir = "${remoteSiteDir}/docs/${version.wildcardValue}"
     def fqRemoteDir = "${sshUsername}@${sshHost}:${remoteDocsDir}"
 
+    group = 'Buildmaster'
     description = "Uploads and unpacks documentation archive" + (sshHost ? " to ${docUrl}" : ": Host is not specified")
 
     uploadDescriptor = false
-
-    taskGroup = 'Buildmaster'
 
     repositories {
         add(new org.apache.ivy.plugins.resolver.SshResolver()) {

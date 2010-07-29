@@ -70,8 +70,8 @@ task snapshotDependencyReport {
  * @see snapshotDependencyReport
  */
 task snapshotDependencyCheck(dependsOn: snapshotDependencyReport) {
+    group = 'Verification'
     description = 'Aborts the build if any Java project has snapshot dependencies.'
-    taskGroup = 'verification'
 
     // bind to build lifecycle if we're a non-snapshot release
     if (version.releaseType != 'SNAPSHOT') {

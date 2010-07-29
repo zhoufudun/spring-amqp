@@ -69,7 +69,7 @@ artifacts {
  * @see http://maven.apache.org/guides/mini/guide-central-repository-upload.html
  */
 uploadArchives {
-    taskGroup = 'Buildmaster'
+    group = 'Buildmaster'
     description = "Does a maven deploy of archives artifacts to " // url appended below
 
     def releaseRepositoryUrl = "file://${project.properties.mavenSyncRepoDir}"

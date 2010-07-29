@@ -28,11 +28,11 @@ project.subprojects.each { project ->
 }
 
 task check {
-    taskGroup = 'Verification'
+    group = 'Verification'
 }
 
 task build(dependsOn: [check, assemble]) {
-    taskGroup = 'Build'
+    group = 'Build'
 }
 
 /**
@@ -41,7 +41,7 @@ task build(dependsOn: [check, assemble]) {
  * @author cbeams
  */
 task distArchive(type: Zip) {
-    taskGroup = 'Build'
+    group = 'Build'
 
     destinationDir = buildDir
     archiveName = "${project.name}-${project.version}.zip"
@@ -98,6 +98,7 @@ task distArchive(type: Zip) {
  * @author cbeams
  */
 task uploadArchives(overwrite: true, dependsOn: distArchive) { // base plugin adds one we need to overwrite
+    group = 'Buildmaster'
     description = 'Uploads the distribution zip file.'
 
     configurations { antlibs }
@@ -107,8 +108,6 @@ task uploadArchives(overwrite: true, dependsOn: distArchive) { // base plugin ad
     }
 
     def releaseType = version.releaseType.toString().toLowerCase()
-
-    taskGroup = 'buildmaster'
 
     doLast() {
         println "Uploading: ${distArchive.archivePath} to s3"

@@ -23,10 +23,10 @@
  * @see http://gradle.org/0.9-preview-3/docs/userguide/userguide_single.html#gradle_wrapper
  */
 task wrapper(type: Wrapper) {
+    group = 'Buildmaster'
     description = "Generates gradlew and gradlew.bat bootstrap scripts"
     gradleVersion = '0.9-preview-3'
     // place jar file and properties into a
     // subdirectory to avoid root dir clutter
     jarPath = 'gradle/wrapper'
-    taskGroup = 'buildmaster'
 }
