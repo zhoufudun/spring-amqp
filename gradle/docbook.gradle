@@ -29,6 +29,8 @@ import java.util.zip.*;
 import org.apache.fop.apps.*;
 
 import com.icl.saxon.TransformerFactoryImpl;
+import ch.qos.logback.classic.Level;
+import org.slf4j.LoggerFactory;
 
 buildscript {
     repositories {
@@ -276,7 +278,10 @@ class DocbookFoPdf extends Docbook {
             Result res = new SAXResult(fop.getDefaultHandler());
 
             // TODO: quell output
+            def fopLogger = LoggerFactory.getILoggerFactory().getLogger('org.apache.fop')
+            fopLogger.level = Level.ERROR
             transformer.transform(src, res);
+            fopLogger.level = null
         } finally {
             if (out != null) {
                 out.close();
