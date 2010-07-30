@@ -344,7 +344,6 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	/**
 	 * Perform a rollback, if appropriate.
 	 * @param channel the Rabbit Channel to roll back
-	 * @throws Exception in case of a rollback error
 	 */
 	protected void rollbackIfNecessary(Channel channel)  {
 		if (this.isChannelLocallyTransacted(channel)) {
