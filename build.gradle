@@ -120,8 +120,11 @@ configure(javaprojects) {
         testCompile 'junit:junit:4.7'
     }
 
-    // enable all compiler warnings
+    // enable all compiler warnings (GRADLE-1077)
     [compileJava, compileTestJava]*.options*.compilerArgs = ['-Xlint:all']
+
+    // generate .classpath files without GRADLE_CACHE variable (GRADLE-1079)
+    eclipseClasspath.variables = [:]
 }
 
 
