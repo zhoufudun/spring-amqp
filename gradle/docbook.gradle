@@ -118,8 +118,11 @@ public class Docbook extends DefaultTask {
     public final void transform() {
         // the docbook tasks issue spurious content to the console. redirect to
         // INFO level so it doesn't show up in the default log level of LIFECYCLE
-        logging.captureStandardOutput(org.gradle.api.logging.LogLevel.INFO)
-        logging.captureStandardError(org.gradle.api.logging.LogLevel.INFO)
+        // unless the user has specified 'gradle -d' - then show them everything
+        if(!project.getLogger().isEnabled(org.gradle.api.logging.LogLevel.DEBUG)) {
+            logging.captureStandardOutput(org.gradle.api.logging.LogLevel.INFO)
+            logging.captureStandardError(org.gradle.api.logging.LogLevel.INFO)
+        }
 
         SAXParserFactory factory = new org.apache.xerces.jaxp.SAXParserFactoryImpl();
         factory.setXIncludeAware(XIncludeAware);
@@ -277,11 +280,15 @@ class DocbookFoPdf extends Docbook {
 
             Result res = new SAXResult(fop.getDefaultHandler());
 
-            // TODO: quell output
+            def debugEnabled = project.getLogger().isEnabled(org.gradle.api.logging.LogLevel.DEBUG)
             def fopLogger = LoggerFactory.getILoggerFactory().getLogger('org.apache.fop')
-            fopLogger.level = Level.ERROR
+
+            // only show verbose fop output if the user has specified 'gradle -d'
+            if (!debugEnabled) { fopLogger.level = Level.ERROR }
+
             transformer.transform(src, res);
-            fopLogger.level = null
+
+            if (!debugEnabled) { fopLogger.level = null }
         } finally {
             if (out != null) {
                 out.close();
