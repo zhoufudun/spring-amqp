@@ -71,7 +71,7 @@ task bundlor(dependsOn: compileJava) {
         // the bundlor ant task writes directly to standard out
         // redirect it to INFO level logging, which gradle will
         // deal with gracefully
-        captureStandardOutput(LogLevel.INFO)
+        logging.captureStandardOutput(LogLevel.INFO)
 
         // the ant task will throw unless this dir exists
         if (!bundlorDir.isDirectory())

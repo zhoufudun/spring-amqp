@@ -28,6 +28,8 @@ import java.util.zip.*;
 
 import org.apache.fop.apps.*;
 
+import org.gradle.api.logging.LogLevel;
+
 import com.icl.saxon.TransformerFactoryImpl;
 import ch.qos.logback.classic.Level;
 import org.slf4j.LoggerFactory;
@@ -116,12 +118,16 @@ public class Docbook extends DefaultTask {
 
     @TaskAction
     public final void transform() {
-        // the docbook tasks issue spurious content to the console. redirect to
-        // INFO level so it doesn't show up in the default log level of LIFECYCLE
-        // unless the user has specified 'gradle -d' - then show them everything
-        if(!project.getLogger().isEnabled(org.gradle.api.logging.LogLevel.DEBUG)) {
-            logging.captureStandardOutput(org.gradle.api.logging.LogLevel.INFO)
-            logging.captureStandardError(org.gradle.api.logging.LogLevel.INFO)
+        // the docbook tasks issue spurious content to the console. redirect to INFO level
+        // so it doesn't show up in the default log level of LIFECYCLE unless the user has
+        // run gradle with '-d' or '-i' switches -- in that case show them everything
+        switch (project.gradle.startParameter.logLevel) {
+            case LogLevel.DEBUG:
+            case LogLevel.INFO:
+                break;
+            default:
+                logging.captureStandardOutput(LogLevel.INFO)
+                logging.captureStandardError(LogLevel.INFO)
         }
 
         SAXParserFactory factory = new org.apache.xerces.jaxp.SAXParserFactoryImpl();
@@ -280,15 +286,17 @@ class DocbookFoPdf extends Docbook {
 
             Result res = new SAXResult(fop.getDefaultHandler());
 
-            def debugEnabled = project.getLogger().isEnabled(org.gradle.api.logging.LogLevel.DEBUG)
-            def fopLogger = LoggerFactory.getILoggerFactory().getLogger('org.apache.fop')
-
-            // only show verbose fop output if the user has specified 'gradle -d'
-            if (!debugEnabled) { fopLogger.level = Level.ERROR }
+            switch (project.gradle.startParameter.logLevel) {
+                case LogLevel.DEBUG:
+                case LogLevel.INFO:
+                    break;
+                default:
+                    // only show verbose fop output if the user has specified 'gradle -d' or 'gradle -i'
+                    LoggerFactory.getILoggerFactory().getLogger('org.apache.fop').level = Level.ERROR
+            }
 
             transformer.transform(src, res);
 
-            if (!debugEnabled) { fopLogger.level = null }
         } finally {
             if (out != null) {
                 out.close();
