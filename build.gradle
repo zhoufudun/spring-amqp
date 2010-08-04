@@ -49,9 +49,9 @@ allprojects {
 
     // defoult set of maven repositories to be used when resolving dependencies
     repositories {
+        mavenRepo urls: 'http://maven.springframework.org/snapshot'
         mavenCentral()
         mavenRepo urls: 'http://repository.springsource.com/maven/bundles/milestone'
-        mavenRepo urls: 'http://maven.springframework.org/snapshot/'
         mavenRepo urls: 'http://maven.springframework.org/release'
         mavenRepo urls: 'http://repository.springsource.com/maven/bundles/release'
         mavenRepo urls: 'http://repository.springsource.com/maven/bundles/external'
