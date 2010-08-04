@@ -20,3 +20,6 @@ build
 .settings
 .springBeans
 .project
+
+# other
+.DS_Store
