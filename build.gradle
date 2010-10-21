@@ -35,6 +35,8 @@
 // -----------------------------------------------------------------------------
 
 apply from: "$rootDir/gradle/version.gradle"
+apply plugin: 'idea'
+
 
 allprojects {
     // group will translate to groupId during pom generation and deployment
@@ -88,18 +90,6 @@ javaprojects = subprojects.findAll { project ->
 
 coreprojects = javaprojects - sampleprojects
 
-
-// configure the build classpath for resolving the gradle idea plugin.
-// this plugin will be built-in in the next gradle release, allowing
-// declaration with a simple "apply plugin: 'idea'"
-// @see configure(javaprojects) { apply plugin: 'org.gradle.idea' } below
-// @see http://jira.codehaus.org/browse/GRADLE-1025
-buildscript {
-    repositories {
-        mavenRepo urls: 'http://gradle.artifactoryonline.com/gradle/plugins'
-    }
-    dependencies { classpath "org.gradle.plugins:gradle-idea-plugin:0.2" }
-}
 
 // -----------------------------------------------------------------------------
 // Configuration for all java subprojects
