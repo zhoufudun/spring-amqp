@@ -101,13 +101,14 @@ configure(javaprojects) {
     apply plugin: 'idea' // `gradle idea` to generate .ipr/.iml
 
     springVersion = '3.0.3.RELEASE'
-    rabbitVersion = '1.8.1'
+    rabbitVersion = '2.1.0'
     erlangVersion = '1.5.3'
     slf4jVersion = '1.5.10'
+    junitVersion = '4.8.1'
 
     // dependencies that are common across all java projects
     dependencies {
-        testCompile 'junit:junit:4.7'
+        testCompile "junit:junit:$junitVersion"
     }
 
     // enable all compiler warnings (GRADLE-1077)
@@ -145,6 +146,8 @@ configure(coreprojects) {
         compile "org.slf4j:slf4j-api:$slf4jVersion"
         runtime "org.slf4j:slf4j-log4j12:$slf4jVersion"
     }
+
+    test.exclude '**/*IntegrationTests.class'
 }
 
 
@@ -185,6 +188,7 @@ configure(sampleprojects) {
 project('spring-amqp') {
     dependencies {
         compile "org.springframework:spring-core:$springVersion"
+        // TODO exclude commons-logging/commons-logging?
         compile "org.springframework:spring-oxm:$springVersion"
         compile 'org.codehaus.jackson:jackson-mapper-asl:1.4.3'
     }
@@ -209,7 +213,9 @@ project('spring-rabbit') {
         compile "org.springframework:spring-context:$springVersion"
         compile "org.springframework:spring-oxm:$springVersion"
         compile "org.springframework:spring-tx:$springVersion"
+        compile "org.springframework.commons:spring-commons-retry:1.0.0.BUILD-SNAPSHOT"
         testCompile 'org.mockito:mockito-all:1.8.4'
+        testCompile "org.springframework:spring-test:$springVersion"
     }
 }
 
@@ -226,7 +232,7 @@ project('spring-rabbit-admin') {
         compile "org.springframework:spring-oxm:$springVersion"
         compile "org.springframework:spring-test:$springVersion"
         compile "org.springframework:spring-tx:$springVersion"
-        compile 'junit:junit:4.7'
+        compile "junit:junit:$junitVersion"
         testCompile "org.erlang.otp:jinterface:$erlangVersion"
         testCompile "org.springframework:spring-beans:$springVersion"
         testCompile "org.springframework:spring-core:$springVersion"
