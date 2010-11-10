@@ -1,26 +1,24 @@
 # maven
 target
-.ant-targets-build.xml
-src/ant/.ant-targets-upload-dist.xml
 
 # gradle
 build
 .gradle
 
-# vim
-*.swp
-
-# idea
-*.iml
-*.iws
-
 # eclipse
 .classpath
-.classpath.old
 .settings
 .springBeans
 .project
 
+# idea
+*.iml
+*.iws
+*.ipr
+
+# vim
+*.sw?
+
 # other
 .DS_Store
-spring-amqp.ipr
+erl_crash.dump

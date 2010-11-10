@@ -21,69 +21,82 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
-import org.springframework.erlang.OtpIOException;
 
 /**
+ * 
+ * This test class assumes that you are already running the rabbitmq broker.
+ * 
  * @author Mark Pollack
  */
 public class RabbitBrokerAdminIntegrationTests {
+
+	private static Log logger = LogFactory
+			.getLog(RabbitBrokerAdminIntegrationTests.class);
 
 	private static RabbitBrokerAdmin brokerAdmin;
 
 	private static SingleConnectionFactory connectionFactory;
 
 	@BeforeClass
-	public static void setUp() {
+	public static void setUp() throws Exception {
 		connectionFactory = new SingleConnectionFactory();
 		connectionFactory.setUsername("guest");
 		connectionFactory.setPassword("guest");
 		brokerAdmin = new RabbitBrokerAdmin(connectionFactory);
+		RabbitStatus status = brokerAdmin.getStatus();
+		if (status.getNodes().isEmpty()) {
+			brokerAdmin.startNode();
+			Thread.sleep(1000L);
+		} else {
+			brokerAdmin.startBrokerApplication();
+		}
+	}
+	
+	@AfterClass
+	public static void close() {
+		brokerAdmin.stopNode();
 	}
 
 	@Test
-	@Ignore("Caused by: OtpIOException: failed to connect from 'rabbit-spring-monitor' to peer node 'localhost'")
-	public void integrationTestsUserCrud() {
+	// @Ignore
+	public void integrationTestsUserCrud() throws Exception {
 		List<String> users = brokerAdmin.listUsers();
 		if (users.contains("joe")) {
 			brokerAdmin.deleteUser("joe");
 		}
+		Thread.sleep(1000L);
 		brokerAdmin.addUser("joe", "trader");
+		Thread.sleep(1000L);
 		brokerAdmin.changeUserPassword("joe", "sales");
+		Thread.sleep(1000L);
 		users = brokerAdmin.listUsers();
 		if (users.contains("joe")) {
+			Thread.sleep(1000L);
 			brokerAdmin.deleteUser("joe");
 		}
 	}
 
-
-	public void integrationTestListUsers() {
-		// OtpErlangObject result =
-		// adminTemplate.getErlangTemplate().executeRpc("rabbit_amqqueue",
-		// "info_all", "/".getBytes());
-		// System.out.println(result);
-		List<String> users = brokerAdmin.listUsers();
-		System.out.println(users);
-	}
-
-	public void integrationTestDeleteUser() {
-		// OtpErlangObject result =
-		// adminTemplate.getErlangTemplate().executeRpc("rabbit_access_control",
-		// "delete_user", "joe".getBytes());
-		brokerAdmin.deleteUser("joe");
-		// System.out.println(result.getClass());
-		// System.out.println(result);
-	}
-
 	@Test
-	@Ignore("Caused by: OtpIOException: failed to connect from 'rabbit-spring-monitor' to peer node 'localhost'")
-	public void testStatusAndBrokerLifecycle() {
+	public void repeatLifecycle() throws Exception {
+		for (int i = 1; i < 20; i++) {
+			testStatusAndBrokerLifecycle();
+			if (i % 5 == 0) {
+				logger.debug("i = " + i);
+			}
+		}
+	}
+
+	// @Test
+	public void testStatusAndBrokerLifecycle() throws Exception {
+
 		RabbitStatus status = brokerAdmin.getStatus();
-		assertBrokerAppRunning(status);
 
 		brokerAdmin.stopBrokerApplication();
 		status = brokerAdmin.getStatus();
@@ -95,21 +108,7 @@ public class RabbitBrokerAdminIntegrationTests {
 	}
 
 	@Test
-	@Ignore("NEEDS RABBITMQ_HOME to be set.")
-	public void testStartNode() {
-		try {
-			brokerAdmin.stopNode();
-		} catch (OtpIOException e) {
-			//assume it is not running.
-		}
-		brokerAdmin.startNode();
-		assertEquals(1,1);
-		brokerAdmin.stopNode();
-	}
-
-	@Test
-	@Ignore("Caused by: java.io.IOException: Nameserver not responding on anakata.local when looking up rabbit")
-	public void testGetQueues() {
+	public void testGetQueues() throws Exception {
 		brokerAdmin.declareQueue(new Queue("test.queue"));
 		assertEquals("/", connectionFactory.getVirtualHost());
 		List<QueueInfo> queues = brokerAdmin.getQueues();

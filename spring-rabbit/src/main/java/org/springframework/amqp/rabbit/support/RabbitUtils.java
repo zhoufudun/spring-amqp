@@ -16,28 +16,30 @@
 
 package org.springframework.amqp.rabbit.support;
 
-import java.beans.PropertyDescriptor;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Method;
+import java.net.ConnectException;
 import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
+import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.AmqpUnsupportedEncodingException;
 import org.springframework.amqp.UncategorizedAmqpException;
+import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.rabbit.core.RabbitMessageProperties;
-import org.springframework.beans.BeanUtils;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.Envelope;
+import com.rabbitmq.client.AMQP.BasicProperties;
 
 /**
  * @author Mark Fisher
@@ -45,10 +47,9 @@ import com.rabbitmq.client.Connection;
  */
 public abstract class RabbitUtils {
 
-	private static final Log logger = LogFactory.getLog(RabbitUtils.class);
-
-
 	public static final int DEFAULT_PORT = AMQP.PROTOCOL.PORT;
+
+	private static final Log logger = LogFactory.getLog(RabbitUtils.class);
 
 
 	/**
@@ -112,6 +113,9 @@ public abstract class RabbitUtils {
 
 	public static AmqpException convertRabbitAccessException(Exception ex) {
 		Assert.notNull(ex, "Exception must not be null");
+		if (ex instanceof ConnectException) {
+			return new AmqpConnectException((ConnectException) ex);
+		}
 		if (ex instanceof IOException) {
 			return new AmqpIOException((IOException) ex);
 		}
@@ -127,36 +131,90 @@ public abstract class RabbitUtils {
 			channel.basicCancel(consumerTag);		
 		}
 		catch (Exception ex) {
-			convertRabbitAccessException(ex);
+			throw convertRabbitAccessException(ex);
 		}
 	}
 
-	public static com.rabbitmq.client.AMQP.BasicProperties extractBasicProperties(Message message, String encoding) {
-		MessageProperties sourceProperties = message.getMessageProperties();
-		if (sourceProperties instanceof RabbitMessageProperties) {
-			return ((RabbitMessageProperties) sourceProperties).getBasicProperties();
-		}
-		RabbitMessageProperties targetProperties = new RabbitMessageProperties();
-		PropertyDescriptor[] descriptors = BeanUtils.getPropertyDescriptors(MessageProperties.class);
-		for (PropertyDescriptor descriptor : descriptors) {
-			Method getter = descriptor.getReadMethod();
-			Method setter = descriptor.getWriteMethod();
-			if (getter != null || setter != null) {
-				try {
-					Object value = getter.invoke(sourceProperties, new Object[0]);
-					if (value != null) {
-						setter.invoke(targetProperties, value);
-					}
-				}
-				catch (Exception e) {
-					// ignore
-				}
+	public static MessageProperties createMessageProperties(final BasicProperties source, final Envelope envelope, final String charset) {
+		MessageProperties target = new MessageProperties();
+		Map<String, Object> headers = source.getHeaders();
+		if (!CollectionUtils.isEmpty(headers)) {
+			for (Map.Entry<String, Object> entry : headers.entrySet()) {
+				target.setHeader(entry.getKey(), entry.getValue());
 			}
 		}
-		for (Map.Entry<String, Object> entry : sourceProperties.getHeaders().entrySet()) {
-			targetProperties.setHeader(entry.getKey(), entry.getValue());
+		target.setTimestamp(source.getTimestamp());
+		target.setMessageId(source.getMessageId());
+		target.setUserId(source.getUserId());
+		target.setAppId(source.getAppId());
+		target.setClusterId(source.getClusterId());
+		target.setType(source.getType());
+		Integer deliverMode = source.getDeliveryMode();
+		if (deliverMode != null) {
+			target.setDeliveryMode(MessageDeliveryMode.fromInt(deliverMode));
 		}
-		return targetProperties.getBasicProperties();		
+		target.setExpiration(source.getExpiration());
+		target.setPriority(source.getPriority());
+		target.setContentType(source.getContentType());
+		target.setContentEncoding(source.getContentEncoding());
+		String correlationId = source.getCorrelationId();
+		if (correlationId != null) {
+			try {
+				target.setCorrelationId(source.getCorrelationId().getBytes(charset));
+			}
+			catch (UnsupportedEncodingException ex) {
+				throw new AmqpUnsupportedEncodingException(ex);
+			}
+		}
+		String replyTo = source.getReplyTo();
+		if (replyTo != null) {
+			target.setReplyTo(new Address(replyTo));
+		}
+		if (envelope != null) {
+			target.setReceivedExchange(envelope.getExchange());
+			target.setReceivedRoutingKey(envelope.getRoutingKey());
+			target.setRedelivered(envelope.isRedeliver());
+			target.setDeliveryTag(envelope.getDeliveryTag());
+		}
+		// TODO: what about messageCount?
+		return target;
+	}
+
+	public static BasicProperties extractBasicProperties(Message message, String charset) {
+		if (message == null || message.getMessageProperties() == null) {
+			return null;
+		}
+		MessageProperties source = message.getMessageProperties();
+		BasicProperties target = new BasicProperties();
+		target.setHeaders(source.getHeaders());
+		target.setTimestamp(source.getTimestamp());
+		target.setMessageId(source.getMessageId());
+		target.setUserId(source.getUserId());		
+		target.setAppId(source.getAppId());
+		target.setClusterId(source.getClusterId());
+		target.setType(source.getType());		
+		MessageDeliveryMode deliveryMode = source.getDeliveryMode();
+		if (deliveryMode != null) {
+			target.setDeliveryMode(MessageDeliveryMode.toInt(deliveryMode));
+		}
+		target.setExpiration(source.getExpiration());
+		target.setPriority(source.getPriority());		
+		target.setContentType(source.getContentType());
+		target.setContentEncoding(source.getContentEncoding());
+		byte[] correlationId = source.getCorrelationId();
+		if (correlationId != null && correlationId.length > 0) {
+			try {
+				target.setCorrelationId(new String(correlationId, charset));
+			}
+			catch (UnsupportedEncodingException ex) {
+				throw new AmqpUnsupportedEncodingException(ex);
+			}
+		}
+		Address replyTo = source.getReplyTo();
+		if (replyTo != null) {
+			target.setReplyTo(replyTo.toString());
+		}
+		return target;
 	}
 
 }

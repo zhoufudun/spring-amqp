@@ -24,10 +24,10 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.erlang.OtpException;
+import org.springframework.erlang.connection.Connection;
 import org.springframework.erlang.connection.ConnectionFactory;
 
 import com.ericsson.otp.erlang.OtpAuthException;
-import com.ericsson.otp.erlang.OtpConnection;
 
 /**
  * @author Mark Pollack
@@ -39,7 +39,7 @@ public abstract class ErlangAccessor implements InitializingBean {
 
 	private ConnectionFactory connectionFactory;
 	
-	protected OtpConnection createConnection() throws UnknownHostException, OtpAuthException, IOException {
+	protected Connection createConnection() throws UnknownHostException, OtpAuthException, IOException {
 		return getConnectionFactory().createConnection();
 	}
 	

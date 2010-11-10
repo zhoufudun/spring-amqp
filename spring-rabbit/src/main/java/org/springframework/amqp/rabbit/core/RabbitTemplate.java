@@ -24,13 +24,12 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.core.Address;
-import org.springframework.amqp.core.ExchangeType;
+import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
-import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.support.RabbitAccessor;
 import org.springframework.amqp.rabbit.support.RabbitUtils;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -53,12 +52,12 @@ import com.rabbitmq.client.GetResponse;
  */
 public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 
-	private static final String DEFAULT_EXCHANGE = ""; // alias for amq.direct default exchange
+	private static final String DEFAULT_EXCHANGE = ""; // alias for amq.direct
+														// default exchange
 
 	private static final String DEFAULT_ROUTING_KEY = "";
 
 	private static final long DEFAULT_REPLY_TIMEOUT = 5000;
-
 
 	// TODO configure defaults
 	// void basicQos(int prefetchSize, int prefetchCount, boolean global)
@@ -74,19 +73,9 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 
 	private volatile boolean immediatePublish;
 
-	private volatile boolean requireAck = false;
-
 	private volatile long replyTimeout = DEFAULT_REPLY_TIMEOUT;
 
-
-	/**
-	 * Internal ResourceFactory adapter for interacting with
-	 * ConnectionFactoryUtils
-	 */
-	private final RabbitTemplateResourceFactory transactionalResourceFactory = new RabbitTemplateResourceFactory();
-
 	private volatile MessageConverter messageConverter = new SimpleMessageConverter();
-
 
 	public RabbitTemplate() {
 		initDefaultStrategies();
@@ -97,7 +86,6 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 		setConnectionFactory(connectionFactory);
 		afterPropertiesSet();
 	}
-
 
 	protected void initDefaultStrategies() {
 		setMessageConverter(new SimpleMessageConverter());
@@ -114,24 +102,32 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	public void setQueue(String queue) {
 		this.queue = queue;
 	}
-	
+
+	/**
+	 * If the message doesn't get routed to a queue for any reason, the server
+	 * will send an async response to let me know. Possible use case: check
+	 * routing.
+	 * 
+	 * @param mandatoryPublish the flag value to set
+	 */
 	public void setMandatoryPublish(boolean mandatoryPublish) {
 		this.mandatoryPublish = mandatoryPublish;
 	}
 
+	/**
+	 * Like a rendezvous.
+	 * 
+	 * @param immediatePublish
+	 */
 	public void setImmediatePublish(boolean immediatePublish) {
 		this.immediatePublish = immediatePublish;
 	}
 
-	public void setRequireAck(boolean requireAck) {
-		this.requireAck = requireAck;
-	}
-
 	/**
-	 * Specify the timeout in milliseconds to be used when waiting for
-	 * a reply Message when using one of the sendAndReceive methods.
-	 * The default value is defined as {@link #DEFAULT_REPLY_TIMEOUT}.
-	 * A negative value indicates an indefinite timeout.
+	 * Specify the timeout in milliseconds to be used when waiting for a reply
+	 * Message when using one of the sendAndReceive methods. The default value
+	 * is defined as {@link #DEFAULT_REPLY_TIMEOUT}. A negative value indicates
+	 * an indefinite timeout.
 	 */
 	public void setReplyTimeout(long replyTimeout) {
 		this.replyTimeout = replyTimeout;
@@ -160,30 +156,6 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 		return this.messageConverter;
 	}
 
-	/**
-	 * Fetch an appropriate Connection from the given RabbitResourceHolder.
-	 * 
-	 * @param holder
-	 *            the RabbitResourceHolder
-	 * @return an appropriate Connection fetched from the holder, or
-	 *         <code>null</code> if none found
-	 */
-	protected Connection getConnection(RabbitResourceHolder holder) {
-		return holder.getConnection();
-	}
-
-	/**
-	 * Fetch an appropriate Channel from the given RabbitResourceHolder.
-	 * 
-	 * @param holder
-	 *            the RabbitResourceHolder
-	 * @return an appropriate Channel fetched from the holder, or
-	 *         <code>null</code> if none found
-	 */
-	protected Channel getChannel(RabbitResourceHolder holder) {
-		return holder.getChannel();
-	}
-
 	public void send(Message message) throws AmqpException {
 		send(this.exchange, this.routingKey, message);
 	}
@@ -210,24 +182,23 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	}
 
 	public void convertAndSend(String exchange, String routingKey, final Object object) throws AmqpException {
-		send(exchange, routingKey, getRequiredMessageConverter().toMessage(object, new RabbitMessageProperties()));
+		send(exchange, routingKey, getRequiredMessageConverter().toMessage(object, new MessageProperties()));
 	}
 
 	public void convertAndSend(Object message, MessagePostProcessor messagePostProcessor) throws AmqpException {
 		convertAndSend(this.exchange, this.routingKey, message, messagePostProcessor);
 	}
 
-	public void convertAndSend(String routingKey, Object message, MessagePostProcessor messagePostProcessor) throws AmqpException {
+	public void convertAndSend(String routingKey, Object message, MessagePostProcessor messagePostProcessor)
+			throws AmqpException {
 		convertAndSend(this.exchange, routingKey, message, messagePostProcessor);
 	}
 
-	public void convertAndSend(String exchange, String routingKey,
-			final Object message,
-			final MessagePostProcessor messagePostProcessor)
-			throws AmqpException {
-		Message msg = getRequiredMessageConverter().toMessage(message, new RabbitMessageProperties());
-		msg = messagePostProcessor.postProcessMessage(msg); 
-		send(exchange, routingKey, msg);
+	public void convertAndSend(String exchange, String routingKey, final Object message,
+			final MessagePostProcessor messagePostProcessor) throws AmqpException {
+		Message messageToSend = getRequiredMessageConverter().toMessage(message, new MessageProperties());
+		messageToSend = messagePostProcessor.postProcessMessage(messageToSend);
+		send(exchange, routingKey, messageToSend);
 	}
 
 	public Message receive() throws AmqpException {
@@ -238,15 +209,23 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	public Message receive(final String queueName) {
 		return execute(new ChannelCallback<Message>() {
 			public Message doInRabbit(Channel channel) throws IOException {
-				GetResponse response = channel.basicGet(queueName, !requireAck);
-				//TODO - check for null of response - got it when sending from .NET client, investigate
-				if (response != null) {					
-					MessageProperties messageProps = new RabbitMessageProperties(response.getProps(), 
-																				 response.getEnvelope().getExchange(),
-																				 response.getEnvelope().getRoutingKey(),
-																				 response.getEnvelope().isRedeliver(),
-																				 response.getEnvelope().getDeliveryTag(),																		   
-																				 response.getMessageCount());
+				GetResponse response = channel.basicGet(queueName, !isChannelTransacted());
+				// TODO - check for null of response - got it when sending from
+				// .NET client, investigate
+				if (response != null) {
+					long deliveryTag = response.getEnvelope().getDeliveryTag();
+					if (isChannelLocallyTransacted(channel)) {
+						channel.basicAck(deliveryTag, false);
+						channel.txCommit();
+					}
+					else if (isChannelTransacted()) {
+						// Not locally transacted but it is transacted so it
+						// could be synchronized with an external transaction
+						ConnectionFactoryUtils.registerDeliveryTag(getConnectionFactory(), channel, deliveryTag);
+					}
+					MessageProperties messageProps = RabbitUtils.createMessageProperties(response.getProps(),
+							response.getEnvelope(), "UTF-8");
+					messageProps.setMessageCount(response.getMessageCount());
 					return new Message(response.getBody(), messageProps);
 				}
 				return null;
@@ -267,16 +246,25 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	}
 
 	public Object convertSendAndReceive(final Object message) throws AmqpException {
-		RabbitMessageProperties messageProperties = new RabbitMessageProperties();
+		return this.convertSendAndReceive(this.exchange, this.routingKey, message);
+	}
+
+	public Object convertSendAndReceive(final String routingKey, final Object message) throws AmqpException {
+		return this.convertSendAndReceive(this.exchange, routingKey, message);
+	}
+
+	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message)
+			throws AmqpException {
+		MessageProperties messageProperties = new MessageProperties();
 		Message requestMessage = getRequiredMessageConverter().toMessage(message, messageProperties);
-		Message replyMessage = this.doSendAndReceive(requestMessage);
+		Message replyMessage = this.doSendAndReceive(exchange, routingKey, requestMessage);
 		if (replyMessage == null) {
 			return null;
 		}
 		return this.getRequiredMessageConverter().fromMessage(replyMessage);
 	}
 
-	private Message doSendAndReceive(final Message message) {
+	private Message doSendAndReceive(final String exchange, final String routingKey, final Message message) {
 		Message replyMessage = this.execute(new ChannelCallback<Message>() {
 			public Message doInRabbit(Channel channel) throws Exception {
 				final SynchronousQueue<Message> replyHandoff = new SynchronousQueue<Message>();
@@ -284,9 +272,10 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 				// TODO: extract this to a method
 				Address replyToAddress = message.getMessageProperties().getReplyTo();
 				if (replyToAddress == null) {
-					// TODO: first check for a replyToAddress property on this template
+					// TODO: first check for a replyToAddress property on this
+					// template
 					DeclareOk queueDeclaration = channel.queueDeclare();
-					replyToAddress = new Address(ExchangeType.direct, DEFAULT_EXCHANGE, queueDeclaration.getQueue());
+					replyToAddress = new Address(ExchangeTypes.DIRECT, DEFAULT_EXCHANGE, queueDeclaration.getQueue());
 					message.getMessageProperties().setReplyTo(replyToAddress);
 				}
 
@@ -296,10 +285,10 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 				boolean exclusive = true;
 				DefaultConsumer consumer = new DefaultConsumer(channel) {
 					@Override
-					public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
-							throws IOException {
-						MessageProperties messageProperties = new RabbitMessageProperties(properties,
-								envelope.getExchange(), envelope.getRoutingKey(), envelope.isRedeliver(), envelope.getDeliveryTag(), 0);
+					public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
+							byte[] body) throws IOException {
+						MessageProperties messageProperties = RabbitUtils.createMessageProperties(properties, envelope,
+								"UTF-8");
 						Message reply = new Message(body, messageProperties);
 						try {
 							replyHandoff.put(reply);
@@ -309,12 +298,11 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 						}
 					}
 				};
-				channel.basicConsume(replyToAddress.getRoutingKey(), noAck, consumerTag, noLocal, exclusive, consumer);
-				// TODO: get exchange and routing key from method args
-				//       methods that are higher in the stack can determine whether to fallback to template properties
+				channel.basicConsume(replyToAddress.getRoutingKey(), noAck, consumerTag, noLocal, exclusive, null,
+						consumer);
 				doSend(channel, exchange, routingKey, message);
-				Message reply = (replyTimeout < 0) ? replyHandoff.take()
-						: replyHandoff.poll(replyTimeout, TimeUnit.MILLISECONDS);
+				Message reply = (replyTimeout < 0) ? replyHandoff.take() : replyHandoff.poll(replyTimeout,
+						TimeUnit.MILLISECONDS);
 				channel.basicCancel(consumerTag);
 				return reply;
 			}
@@ -327,9 +315,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 		Connection conToClose = null;
 		Channel channelToClose = null;
 		try {
-			Channel channelToUse = ConnectionFactoryUtils
-					.doGetTransactionalChannel(getConnectionFactory(),
-							this.transactionalResourceFactory);
+			Channel channelToUse = getTransactionalChannel();
 			if (channelToUse == null) {
 				conToClose = createConnection();
 				channelToClose = createChannel(conToClose);
@@ -363,7 +349,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Publishing message on exchange [" + exchange + "], routingKey = [" + routingKey + "]");
 			}
-			
+
 			if (exchange == null) {
 				// try to send to configured exchange
 				exchange = this.exchange;
@@ -373,18 +359,18 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 				// try to send to configured routing key
 				routingKey = this.routingKey;
 			}
-			//TODO parameterize out default encoding				
-			channel.basicPublish(exchange, routingKey,
-					this.mandatoryPublish, this.immediatePublish,
+			// TODO parameterize out default encoding
+			channel.basicPublish(exchange, routingKey, this.mandatoryPublish, this.immediatePublish,
 					RabbitUtils.extractBasicProperties(message, "UTF-8"), message.getBody());
 			// Check commit - avoid commit call within a JTA transaction.
 			// TODO: should we be able to do (via wrapper) something like:
 			// channel.getTransacted()?
-			if (isChannelTransacted() && isChannelLocallyTransacted(channel)) {
+			if (isChannelLocallyTransacted(channel)) {
 				// Transacted channel created by this template -> commit.
 				RabbitUtils.commitIfNecessary(channel);
 			}
-		} finally {
+		}
+		finally {
 			// RabbitUtils. .. nothing to do here? compared to
 			// session.closeMessageProducer(producer);
 		}
@@ -395,15 +381,13 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	 * its transaction is managed by this template's Channel handling and not by
 	 * an external transaction coordinator.
 	 * 
-	 * @param channel
-	 *            the Channel to check
+	 * @param channel the Channel to check
 	 * @return whether the given Channel is locally transacted
 	 * @see ConnectionFactoryUtils#isChannelTransactional
 	 * @see #isChannelTransacted
 	 */
 	protected boolean isChannelLocallyTransacted(Channel channel) {
-		return isChannelTransacted()
-				&& !ConnectionFactoryUtils.isChannelTransactional(channel, getConnectionFactory());
+		return isChannelTransacted() && !ConnectionFactoryUtils.isChannelTransactional(channel, getConnectionFactory());
 	}
 
 	private MessageConverter getRequiredMessageConverter() throws IllegalStateException {
@@ -418,38 +402,9 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	private String getRequiredQueue() throws IllegalStateException {
 		String name = this.queue;
 		if (name == null) {
-			throw new AmqpIllegalStateException(
-					"No 'queue' specified. Check configuration of RabbitTemplate.");
+			throw new AmqpIllegalStateException("No 'queue' specified. Check configuration of RabbitTemplate.");
 		}
 		return name;
-	}
-
-
-	/**
-	 * ResourceFactory implementation that delegates to this template's
-	 * protected callback methods.
-	 */
-	private class RabbitTemplateResourceFactory implements ConnectionFactoryUtils.ResourceFactory {
-
-		public Connection getConnection(RabbitResourceHolder holder) {
-			return RabbitTemplate.this.getConnection(holder);
-		}
-
-		public Channel getChannel(RabbitResourceHolder holder) {
-			return RabbitTemplate.this.getChannel(holder);
-		}
-
-		public Connection createConnection() throws IOException {
-			return RabbitTemplate.this.createConnection();
-		}
-
-		public Channel createChannel(Connection con) throws IOException {
-			return RabbitTemplate.this.createChannel(con);
-		}
-
-		public boolean isSynchedLocalTransactionAllowed() {
-			return RabbitTemplate.this.isChannelTransacted();
-		}
 	}
 
 }
