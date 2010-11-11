@@ -100,7 +100,7 @@ configure(javaprojects) {
     apply plugin: 'eclipse' // `gradle eclipse` to generate .classpath/.project
     apply plugin: 'idea' // `gradle idea` to generate .ipr/.iml
 
-    springVersion = '3.0.3.RELEASE'
+    springVersion = '3.0.5.RELEASE'
     rabbitVersion = '2.1.0'
     erlangVersion = '1.5.3'
     slf4jVersion = '1.5.10'
