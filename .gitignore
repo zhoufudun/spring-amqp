@@ -8,7 +8,6 @@ build
 # eclipse
 .classpath
 .settings
-.springBeans
 .project
 
 # idea
