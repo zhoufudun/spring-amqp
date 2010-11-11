@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import org.springframework.build.Version
 
 // -----------------------------------------------------------------------------
 // Main gradle build file for Spring AMQP
@@ -24,8 +25,23 @@
 //   or from jars on 'buildscript' classpath (in our case, it's all buildSrc)
 //   sources in buildSrc are compiled and placed on the classpath automatically
 //
-// @author cbeams
+// @author Chris Beams
 // -----------------------------------------------------------------------------
+
+
+// -----------------------------------------------------------------------------
+// Configuration for the root project
+// -----------------------------------------------------------------------------
+// used for artifact names, building doc upload urls, etc.
+description = 'Spring AMQP'
+abbreviation = 'AMQP'
+
+apply plugin: 'base'
+apply plugin: 'idea'
+
+def buildSrcDir = "$rootDir/buildSrc"
+apply from: "$buildSrcDir/wrapper.gradle"
+apply from: "$buildSrcDir/maven-root-pom.gradle"
 
 
 // -----------------------------------------------------------------------------
@@ -33,11 +49,6 @@
 //
 // @see settings.gradle for list of all subprojects
 // -----------------------------------------------------------------------------
-
-apply from: "$rootDir/gradle/version.gradle"
-apply plugin: 'idea'
-
-
 allprojects {
     // group will translate to groupId during pom generation and deployment
     group = 'org.springframework.amqp'
@@ -47,7 +58,7 @@ allprojects {
     // milestone or release.
     // @see org.springframework.build.Version under buildSrc/ for more info
     // @see gradle.properties for the declaration of this property.
-    version = createVersion(springAmqpVersion)
+    version = new Version(springAmqpVersion)
 
     // defoult set of maven repositories to be used when resolving dependencies
     repositories {
@@ -95,16 +106,26 @@ coreprojects = javaprojects - sampleprojects
 // Configuration for all java subprojects
 // -----------------------------------------------------------------------------
 configure(javaprojects) {
-    apply plugin: 'java' // tasks for conventional java lifecycle
-    apply plugin: 'maven' // `gradle install` to push jars to local .m2 cache
-    apply plugin: 'eclipse' // `gradle eclipse` to generate .classpath/.project
-    apply plugin: 'idea' // `gradle idea` to generate .ipr/.iml
+    apply plugin: 'java'     // tasks for conventional java lifecycle
+    apply plugin: 'maven'    // `gradle install` to push jars to local .m2 cache
+    apply plugin: 'eclipse'  // `gradle eclipse` to generate .classpath/.project
+    apply plugin: 'idea'     // `gradle idea` to generate .ipr/.iml
 
-    springVersion = '3.0.5.RELEASE'
-    rabbitVersion = '2.1.0'
+    // ensure JDK 1.6 compatibility
+    sourceCompatibility=1.6
+    targetCompatibility=1.6
+
+    // set up dedicated directories for jars and source jars.
+    // this makes it easier when putting together the distribution
+    libsBinDir = new File(libsDir, 'bin')
+    libsSrcDir = new File(libsDir, 'src')
+
     erlangVersion = '1.5.3'
-    slf4jVersion = '1.5.10'
     junitVersion = '4.8.2'
+    log4jVersion = '1.2.15'
+    rabbitVersion = '2.1.0'
+    slf4jVersion = '1.5.10'
+    springVersion = '3.0.5.RELEASE'
 
     // dependencies that are common across all java projects
     dependencies {
@@ -125,18 +146,22 @@ configure(javaprojects) {
 // @see individual project(*) configurations below
 // -----------------------------------------------------------------------------
 configure(coreprojects) {
+    // all core projects should be OSGi-compliant
+    apply plugin: 'bundlor'
+
     // certain projects will need erlang licensing in addition to Apache.
     // false by default, but certain projects will assign true
     erlangLicense = false
 
-    // all core projects should be OSGi-compliant bundles
-    // add the bundlor task to ensure proper manifests
-    apply from: "$rootDir/gradle/bundlor.gradle"
-    apply from: "$rootDir/gradle/maven-deployment.gradle"
+    // add tasks for creating source jars and generating poms etc
+    apply from: "$buildSrcDir/maven-deployment.gradle"
+
+    // add tasks for finding and publishing .xsd files
+    apply from: "$buildSrcDir/schema-publication.gradle"
 
     // dependencies common to all core projects
     dependencies {
-        compile ('log4j:log4j:1.2.15') {
+        compile ("log4j:log4j:$log4jVersion") {
             exclude group: 'javax.mail', name: 'mail'
             exclude group: 'javax.jms', name: 'jms'
             exclude group: 'com.sun.jdmk', name: 'jmxtools'
@@ -147,6 +172,7 @@ configure(coreprojects) {
         runtime "org.slf4j:slf4j-log4j12:$slf4jVersion"
     }
 
+    // integration tests require a rabbitmq server up; ignore for now
     test.exclude '**/*IntegrationTests.class'
 }
 
@@ -170,11 +196,16 @@ configure(sampleprojects) {
         compile "com.rabbitmq:amqp-client:$rabbitVersion"
         compile "org.springframework:spring-aop:$springVersion"
         compile "org.springframework:spring-oxm:$springVersion"
-        runtime 'log4j:log4j:1.2.14'
-        runtime 'cglib:cglib-nodep:2.2'
         runtime 'aspectj:aspectjrt:1.5.4'
         runtime 'aspectj:aspectjweaver:1.5.4'
         runtime "org.springframework:spring-context-support:$springVersion"
+        runtime('cglib:cglib-nodep:2.2') { optional = true }
+        runtime ("log4j:log4j:$log4jVersion") {
+            exclude group: 'javax.mail', name: 'mail'
+            exclude group: 'javax.jms', name: 'jms'
+            exclude group: 'com.sun.jdmk', name: 'jmxtools'
+            exclude group: 'com.sun.jmx', name: 'jmxri'
+        }
         testCompile "org.springframework:spring-test:$springVersion"
     }
 }
@@ -186,6 +217,7 @@ configure(sampleprojects) {
 // @see configure(javaprojects) above for general config
 // -----------------------------------------------------------------------------
 project('spring-amqp') {
+    description = 'Spring AMQP Core'
     dependencies {
         compile "org.springframework:spring-core:$springVersion"
         // TODO exclude commons-logging/commons-logging?
@@ -195,8 +227,8 @@ project('spring-amqp') {
 }
 
 project('spring-erlang') {
+    description = 'Spring Erlang Support'
     erlangLicense = true
-
     dependencies {
         compile "org.springframework:spring-beans:$springVersion"
         compile "org.erlang.otp:jinterface:$erlangVersion"
@@ -204,6 +236,7 @@ project('spring-erlang') {
 }
 
 project('spring-rabbit') {
+    description = 'Spring RabbitMQ Support'
     dependencies {
         compile project(':spring-amqp')
         compile "com.rabbitmq:amqp-client:$rabbitVersion"
@@ -220,8 +253,8 @@ project('spring-rabbit') {
 }
 
 project('spring-rabbit-admin') {
+    description = 'Spring RabbitMQ Administrative Support'
     erlangLicense = true
-
     dependencies {
         compile project(':spring-amqp')
         compile project(':spring-erlang')
@@ -241,19 +274,26 @@ project('spring-rabbit-admin') {
 
 
 // -----------------------------------------------------------------------------
-// Configuration for each individual sample subproject
+// Configuration for sample projects
 //
 // @see configure(sampleprojects) above for general config
 // -----------------------------------------------------------------------------
+project(':spring-amqp-samples') {
+    description = 'Spring AMQP Samples'
+}
+
 project(':spring-amqp-samples:helloworld') {
+    description = 'Spring AMQP Hello World Sample'
+
     generatePom {
         artifactId = 'helloworld'
-        artifactName = 'Spring AMQP Hello World'
+        artifactName = project.description
         artifactDescription = 'Shows the usage of Spring AMQP integration classes'
     }
 }
 
 project(':spring-amqp-samples:stocks') {
+    description = 'Spring AMQP Stocks Sample'
     dependencies {
         compile "org.springframework:spring-beans:$springVersion"
         compile "org.springframework:spring-core:$springVersion"
@@ -266,7 +306,7 @@ project(':spring-amqp-samples:stocks') {
 
     generatePom {
         artifactId = 'stocks'
-        artifactName = 'Spring Rabbit Stocks'
+        artifactName = project.description
         artifactDescription = 'Shows the usage of Spring Rabbit integration classes'
     }
 
@@ -290,22 +330,12 @@ project(':spring-amqp-samples:stocks') {
 }
 
 
-// add basic tasks like 'clean' and 'assemble' to the root project. e.g.: allows
-// running `gradle clean` from the root project and deleting the build directory
-apply plugin: 'base'
-
-// add tasks like 'distArchive'
-apply from: "$rootDir/gradle/dist.gradle"
-
-// add tasks like 'snapshotDependencyCheck'
-apply from: "${rootDir}/gradle/checks.gradle"
-
-
 // -----------------------------------------------------------------------------
-// Import tasks related to releasing and managing the project
-// depending on the role played by the current user.
-//
-// @see gradle.properties for more information on roles
+// Configuration for the docs subproject
 // -----------------------------------------------------------------------------
-// add management tasks like `wrapper` for generating the gradlew* scripts
-apply from: "$rootDir/gradle/wrapper.gradle"
+project('docs') {
+    apply from: "$buildSrcDir/docs.gradle"
+}
+
+apply from: "$buildSrcDir/dist.gradle"
+apply from: "$buildSrcDir/checks.gradle"
