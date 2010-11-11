@@ -104,7 +104,7 @@ configure(javaprojects) {
     rabbitVersion = '2.1.0'
     erlangVersion = '1.5.3'
     slf4jVersion = '1.5.10'
-    junitVersion = '4.8.1'
+    junitVersion = '4.8.2'
 
     // dependencies that are common across all java projects
     dependencies {
