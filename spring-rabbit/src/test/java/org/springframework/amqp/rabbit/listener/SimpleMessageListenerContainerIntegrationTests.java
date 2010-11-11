@@ -20,10 +20,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
@@ -45,7 +43,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		}
 	}
 
-	private Queue queue;
+	private Queue queue = new Queue("test.queue");
 
 	private RabbitTemplate template = new RabbitTemplate();
 
@@ -58,16 +56,20 @@ public class SimpleMessageListenerContainerIntegrationTests {
 			SimpleMessageListenerContainer.class);
 
 	@Rule
-	public static BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
+	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueue(queue);
 
 	private final int messageCount;
 
 	private SimpleMessageListenerContainer container;
 
-	public SimpleMessageListenerContainerIntegrationTests(int messageCount, int concurrency, TransactionType transacted) {
+	private final int txSize;
+
+	public SimpleMessageListenerContainerIntegrationTests(int messageCount, int concurrency,
+			TransactionType transacted, int txSize) {
 		this.messageCount = messageCount;
 		this.concurrentConsumers = concurrency;
 		this.transactional = transacted;
+		this.txSize = txSize;
 	}
 
 	@Parameters
@@ -76,11 +78,16 @@ public class SimpleMessageListenerContainerIntegrationTests {
 				params(2, 4, 1, TransactionType.NATIVE), params(3, 4, 1, TransactionType.EXTERNAL),
 				params(4, 2, 2, TransactionType.NATIVE), params(5, 2, 2, TransactionType.NONE),
 				params(6, 20, 4, TransactionType.NATIVE), params(7, 20, 4, TransactionType.NONE),
-				params(8, 1000, 4, TransactionType.NATIVE), params(9, 1000, 4, TransactionType.NONE));
+				params(8, 1000, 4, TransactionType.NATIVE), params(9, 1000, 4, TransactionType.NONE),
+				params(10, 1000, 4, TransactionType.NATIVE, 10));
+	}
+
+	private static Object[] params(int i, int messageCount, int concurrency, TransactionType transacted, int txSize) {
+		return new Object[] { messageCount, concurrency, transacted, txSize };
 	}
 
 	private static Object[] params(int i, int messageCount, int concurrency, TransactionType transacted) {
-		return new Object[] { messageCount, concurrency, transacted };
+		return params(i, messageCount, concurrency, transacted, 1);
 	}
 
 	@Before
@@ -89,16 +96,6 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		connectionFactory.setChannelCacheSize(concurrentConsumers);
 		// connectionFactory.setPort(5673);
 		template.setConnectionFactory(connectionFactory);
-		RabbitAdmin admin = new RabbitAdmin(template);
-		try {
-			admin.deleteQueue("test.queue");
-		} catch (AmqpIOException e) {
-			// Ignore (queue didn't exist)
-		}
-		queue = new Queue("test.queue");
-		// Idempotent, so no problem to do this for every test
-		admin.declareQueue(queue);
-		admin.purgeQueue("test.queue", false);
 	}
 
 	@After
@@ -156,7 +153,8 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
 		container.setMessageListener(new MessageListenerAdapter(listener));
 		container.setQueueName(queue.getName());
-		container.setPrefetchCount(1);
+		container.setTxSize(txSize);
+		container.setPrefetchCount(txSize);
 		container.setConcurrentConsumers(concurrentConsumers);
 		container.setChannelTransacted(transactional.isTransactional());
 		if (transactional == TransactionType.EXTERNAL) {
