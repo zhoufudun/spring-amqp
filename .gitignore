@@ -6,7 +6,7 @@
 .ant-targets-build.xml
 .classpath
 .idea
-.gradle
+#.gradle
 .project
 .settings
 .checkstyle
