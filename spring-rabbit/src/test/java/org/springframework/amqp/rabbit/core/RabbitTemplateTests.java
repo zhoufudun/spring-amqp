@@ -149,6 +149,13 @@ public class RabbitTemplateTests {
 		final RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		template.setChannelTransacted(true);
 
+		template.setReturnsCallback(new ReturnsCallback() {
+			@Override
+			public void returnedMessage(ReturnedMessage returned) {
+
+			}
+		});
+
 		txTemplate.execute(status -> {
 			template.convertAndSend("foo", "bar");
 			return null;
