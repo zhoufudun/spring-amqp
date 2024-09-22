@@ -26,9 +26,9 @@ import org.springframework.lang.Nullable;
  * The timestamp allows the pending confirmation to be
  * expired. It also holds {@link CorrelationData} for
  * the client to correlate a confirm with a sent message.
+ *
  * @author Gary Russell
  * @since 1.0.1
- *
  */
 public class PendingConfirm {
 
@@ -47,7 +47,7 @@ public class PendingConfirm {
 
 	/**
 	 * @param correlationData The correlation data.
-	 * @param timestamp The timestamp.
+	 * @param timestamp       The timestamp.
 	 */
 	public PendingConfirm(@Nullable CorrelationData correlationData, long timestamp) {
 		this.correlationData = correlationData;
@@ -57,6 +57,7 @@ public class PendingConfirm {
 	/**
 	 * The correlation data supplied by the client when sending the message
 	 * corresponding to this confirmation.
+	 *
 	 * @return The correlation data.
 	 */
 	@Nullable
@@ -73,6 +74,7 @@ public class PendingConfirm {
 
 	/**
 	 * When the confirmation is nacked, set the cause when available.
+	 *
 	 * @param cause The cause.
 	 * @since 1.4
 	 */
@@ -91,6 +93,7 @@ public class PendingConfirm {
 
 	/**
 	 * True if a returned message has been received.
+	 *
 	 * @return true if there is a return.
 	 * @since 2.2.10
 	 */
@@ -100,6 +103,7 @@ public class PendingConfirm {
 
 	/**
 	 * Indicate that a returned message has been received.
+	 *
 	 * @param isReturned true if there is a return.
 	 * @since 2.2.10
 	 */
@@ -110,6 +114,7 @@ public class PendingConfirm {
 	/**
 	 * Return true if a return has been passed to the listener or if no return has been
 	 * received.
+	 *
 	 * @return false if an expected returned message has not been passed to the listener.
 	 * @throws InterruptedException if interrupted.
 	 * @since 2.2.10
@@ -120,6 +125,7 @@ public class PendingConfirm {
 
 	/**
 	 * Count down the returned message latch; call after the listener has been called.
+	 *
 	 * @since 2.2.10
 	 */
 	public void countDown() {
