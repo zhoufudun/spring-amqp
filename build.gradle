@@ -28,6 +28,7 @@ plugins {
 	id 'org.asciidoctor.jvm.pdf' version '3.3.2'
 	id 'org.asciidoctor.jvm.gems' version '3.3.2'
 	id 'org.asciidoctor.jvm.convert' version '3.3.2'
+	id 'maven-publish'
 }
 
 description = 'Spring AMQP'
@@ -219,6 +220,10 @@ subprojects { subproject ->
 					}
 				}
 			}
+		}
+		// 执行 ./gradlew publishToMavenLocal -x asciidoctor    可执行maven的install
+		repositories {
+			mavenLocal()  // 将发布到本地 Maven 仓库
 		}
 	}
 
