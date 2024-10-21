@@ -29,7 +29,7 @@ plugins {
 	id 'org.asciidoctor.jvm.gems' version '3.3.2'
 	id 'org.asciidoctor.jvm.convert' version '3.3.2'
 	id 'maven-publish'
-	id 'java'
+//	id 'java'
 }
 
 description = 'Spring AMQP'
@@ -204,10 +204,10 @@ subprojects { subproject ->
 	[compileJava, compileTestJava]*.options*.compilerArgs = [xLintArg]
 
 	// 创建 sourcesJar 任务
-	task spring_qmap_sourceJar(type: Jar) {
-		classifier = 'sources'
-		from sourceSets.main.allSource
-	}
+//	task spring_qmap_sourceJar(type: Jar) {
+//		classifier = 'sources'
+//		from sourceSets.main.allSource
+//	}
 
 
 	publishing {
@@ -216,8 +216,8 @@ subprojects { subproject ->
 				suppressAllPomMetadataWarnings()
 				from components.java
 
-				// 发布源码 JAR
-				artifact spring_qmap_sourceJar
+//				// 发布源码 JAR
+//				artifact spring_qmap_sourceJar
 
 				pom.withXml {
 					def pomDeps = asNode().dependencies.first()

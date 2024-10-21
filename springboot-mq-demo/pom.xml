@@ -38,6 +38,8 @@
 			<artifactId>spring-amqp</artifactId>
 			<!--本项目的spring-amqp-->
 			<version>2.4.18-SNAPSHOT</version>
+<!--			<scope>system</scope>-->
+<!--			<systemPath>C:\Users\Administrator\.m2\repository\org\springframework\amqp\spring-amqp\2.4.18-SNAPSHOT.jar</systemPath>-->
 		</dependency>
 
         <dependency>
@@ -50,7 +52,7 @@
             <artifactId>spring-boot-starter-amqp</artifactId>
 			<exclusions>
 				<exclusion>
-					<artifactId>spring-amqp</artifactId>
+					<artifactId>spring-rabbit</artifactId>
 					<groupId>org.springframework.amqp</groupId>
 				</exclusion>
 			</exclusions>
